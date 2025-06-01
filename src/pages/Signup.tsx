@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,19 +7,101 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Stethoscope, HeartPulse, UserCheck, Users } from "lucide-react";
 import { motion } from "framer-motion";
+import { authApi, SignupRequest, LoginRequest } from "@/services/authApi";
+import { tokenStorage } from "@/utils/tokenStorage";
+import { useToast } from "@/hooks/use-toast";
 
 const Signup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [userType, setUserType] = useState("");
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    setTimeout(() => {
-      navigate('/home-feed');
-    }, 1500);
+    const formData = new FormData(e.target as HTMLFormElement);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    
+    try {
+      const loginData: LoginRequest = { email, password };
+      const response = await authApi.login(loginData);
+      
+      if (response.success && response.token) {
+        tokenStorage.setToken(response.token);
+        if (response.user) {
+          tokenStorage.setUser(response.user);
+        }
+        
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
+        
+        navigate('/home-feed');
+      } else {
+        throw new Error(response.message || 'Login failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Login failed",
+        description: error instanceof Error ? error.message : "An error occurred during login",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    const formData = new FormData(e.target as HTMLFormElement);
+    const firstName = formData.get('firstName') as string;
+    const lastName = formData.get('lastName') as string;
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const specialty = formData.get('specialty') as string;
+    
+    try {
+      const signupData: SignupRequest = {
+        firstName,
+        lastName,
+        email,
+        password,
+        specialty,
+        userType: userType as 'doctor' | 'healthcare'
+      };
+      
+      const response = await authApi.signup(signupData);
+      
+      if (response.success && response.token) {
+        tokenStorage.setToken(response.token);
+        if (response.user) {
+          tokenStorage.setUser(response.user);
+        }
+        
+        toast({
+          title: "Account created successfully",
+          description: "Welcome to PharmInc!",
+        });
+        
+        navigate('/home-feed');
+      } else {
+        throw new Error(response.message || 'Signup failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Signup failed",
+        description: error instanceof Error ? error.message : "An error occurred during signup",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleUserTypeSelect = (type: string) => {
@@ -91,6 +172,7 @@ const Signup = () => {
                   variant="ghost" 
                   onClick={() => setUserType("")}
                   className="text-gray-500 hover:text-gray-700"
+                  disabled={isLoading}
                 >
                   ← Back
                 </Button>
@@ -107,31 +189,31 @@ const Signup = () => {
               </div>
 
               <TabsList className="grid grid-cols-2 mb-8">
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                <TabsTrigger value="login">Log In</TabsTrigger>
+                <TabsTrigger value="signup" disabled={isLoading}>Sign Up</TabsTrigger>
+                <TabsTrigger value="login" disabled={isLoading}>Log In</TabsTrigger>
               </TabsList>
               
               <TabsContent value="signup">
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSignupSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" placeholder="John" required />
+                      <Input id="firstName" name="firstName" placeholder="John" required disabled={isLoading} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" placeholder="Doe" required />
+                      <Input id="lastName" name="lastName" placeholder="Doe" required disabled={isLoading} />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder={userType === 'doctor' ? 'doctor@hospital.org' : 'professional@healthcare.org'} required />
+                    <Input id="email" name="email" type="email" placeholder={userType === 'doctor' ? 'doctor@hospital.org' : 'professional@healthcare.org'} required disabled={isLoading} />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" placeholder="••••••••" required />
+                    <Input id="password" name="password" type="password" placeholder="••••••••" required disabled={isLoading} />
                   </div>
                   
                   <div className="space-y-2">
@@ -140,7 +222,10 @@ const Signup = () => {
                     </Label>
                     <select 
                       id="specialty"
+                      name="specialty"
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={isLoading}
+                      required
                     >
                       <option value="">Select your {userType === 'doctor' ? 'specialty' : 'area'}</option>
                       {userType === 'doctor' ? (
@@ -166,7 +251,7 @@ const Signup = () => {
                   </div>
                   
                   <div className="flex items-center space-x-2 pt-2">
-                    <Checkbox id="terms" required />
+                    <Checkbox id="terms" required disabled={isLoading} />
                     <label
                       htmlFor="terms"
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -189,7 +274,7 @@ const Signup = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>
-                    <Input id="login-email" type="email" placeholder={userType === 'doctor' ? 'doctor@hospital.org' : 'professional@healthcare.org'} required />
+                    <Input id="login-email" name="email" type="email" placeholder={userType === 'doctor' ? 'doctor@hospital.org' : 'professional@healthcare.org'} required disabled={isLoading} />
                   </div>
                   
                   <div className="space-y-2">
@@ -199,11 +284,11 @@ const Signup = () => {
                         Forgot password?
                       </Link>
                     </div>
-                    <Input id="login-password" type="password" placeholder="••••••••" required />
+                    <Input id="login-password" name="password" type="password" placeholder="••••••••" required disabled={isLoading} />
                   </div>
                   
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="remember" />
+                    <Checkbox id="remember" disabled={isLoading} />
                     <label
                       htmlFor="remember"
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
