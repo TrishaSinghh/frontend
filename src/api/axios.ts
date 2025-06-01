@@ -1,4 +1,3 @@
-// src/api/axios.ts
 import axios from "axios";
 
 const api = axios.create({
@@ -8,11 +7,17 @@ const api = axios.create({
   },
 });
 
-// Optional: Automatically attach JWT token if present
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // Only attach token for protected endpoints
+  const publicEndpoints = ["/auth/register", "/auth/login"];
+  const isPublic = publicEndpoints.some(endpoint =>
+    config.url?.includes(endpoint)
+  );
+  if (!isPublic) {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
