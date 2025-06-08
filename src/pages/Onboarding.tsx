@@ -156,7 +156,17 @@ await apiClient.post("/user/experience", {
         profileData.lastName = profile.lastName;
         profileData.specialization = profile.specialization;
       }
-      await userService.updateUser(userId, profileData);
+      try {
+  // 1. Check if user exists
+  await userService.getUserById(userId);
+  // 2. If it exists, update
+  await userService.updateUser(userId, profileData);
+  // (Optional) Show success message here
+} catch (error) {
+  console.error('User does not exist or update failed:', error);
+  // (Optional) Show error message to user here
+}
+
 
       // Update local storage
       tokenStorage.setUser({
