@@ -56,6 +56,7 @@ const Profile = () => {
       .then(setExperience)
       .catch(() => setExpError('Could not load experience.'));
 
+    setLoading(false);
   }, [userId]);
 
   // Fetch institution if user has institutionId
@@ -68,7 +69,7 @@ const Profile = () => {
         .then(setInstitution)
         .catch(() => setInstitution(null));
     }
-  }, [user]); setLoading(false);
+  }, [user]);
 
   // If loading, show a simple loading state
   if (loading && !user) {
