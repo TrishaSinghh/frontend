@@ -7,72 +7,61 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MapPin, Calendar, Users, BookOpen, Edit, ExternalLink, Search, FileText, Video, Camera, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
-import { tokenStorage } from '@/utils/tokenStorage'; // Adjust path as needed
+import { tokenStorage } from '@/utils/tokenStorage';
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('Posts');
   const tabs = ['Posts', 'About', 'Activity', 'Experience', 'Education'];
 
-  // User, education, experience, institution state
-  const [user, setUser] = useState(null);
-  const [education, setEducation] = useState([]);
-  const [experience, setExperience] = useState([]);
+  const [profileData, setProfileData] = useState(null);
   const [institution, setInstitution] = useState(null);
-
   const [loading, setLoading] = useState(true);
-  const [eduError, setEduError] = useState(null);
-  const [expError, setExpError] = useState(null);
 
-  // Get userId from localStorage
   const userObj = tokenStorage.getUser();
   const userId = userObj?.userId || userObj?.id;
 
+  // DEBUG: Attach to window for easy console access (remove in production)
+  
+  // Fetch profile data
   useEffect(() => {
     if (!userId) return;
 
     setLoading(true);
 
-    // Fetch user profile
     fetch(`https://api.pharminc.in/user/${userId}`, {
       headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
     })
       .then(res => res.ok ? res.json() : Promise.reject('Could not load user'))
-      .then(setUser)
-      .catch(() => setUser(null));
-
-    // Fetch education
-    fetch(`https://api.pharminc.in/user/education/${userId}`, {
-      headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
-    })
-      .then(res => res.ok ? res.json() : Promise.reject('Could not load education'))
-      .then(setEducation)
-      .catch(() => setEduError('Could not load education.'));
-
-    // Fetch experience
-    fetch(`https://api.pharminc.in/user/experience?userId=${userId}`, {
-      headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
-    })
-      .then(res => res.ok ? res.json() : Promise.reject('Could not load experience'))
-      .then(setExperience)
-      .catch(() => setExpError('Could not load experience.'));
-
-    setLoading(false);
+      .then(data => {
+        setProfileData(Array.isArray(data) ? data[0] : data);
+      })
+      .catch(err => {
+        console.error(err);
+        setProfileData(null);
+      })
+      .finally(() => setLoading(false));
   }, [userId]);
 
-  // Fetch institution if user has institutionId
+  // Fetch institution
   useEffect(() => {
-    if (user?.institutionId) {
-      fetch(`https://api.pharminc.in/institution/${user.institutionId}`, {
+    if (!profileData) return;
+
+    // Try user.institutionId first, then education.institutionId, then experience.institutionId
+    let institutionId = profileData.user?.institutionId;
+    if (!institutionId && profileData.educations) institutionId = profileData.educations.institutionId;
+    if (!institutionId && profileData.experiences) institutionId = profileData.experiences.institutionId;
+
+    if (institutionId) {
+      fetch(`https://api.pharminc.in/institution/${institutionId}`, {
         headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
       })
         .then(res => res.ok ? res.json() : Promise.reject('No institution found.'))
         .then(setInstitution)
         .catch(() => setInstitution(null));
     }
-  }, [user]);
+  }, [profileData]);
 
-  // If loading, show a simple loading state
-  if (loading && !user) {
+  if (loading && !profileData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 flex items-center justify-center">
         <div className="text-xl text-gray-700">Loading profile...</div>
@@ -80,7 +69,6 @@ const Profile = () => {
     );
   }
 
-  // If no user ID found, show error
   if (!userId) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 flex items-center justify-center">
@@ -89,7 +77,18 @@ const Profile = () => {
     );
   }
 
-  // UI rendering (unchanged except for data)
+  if (!profileData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 flex items-center justify-center">
+        <div className="text-xl text-gray-700">No profile data found.</div>
+      </div>
+    );
+  }
+
+  const user = profileData.user;
+  const experience = profileData.experiences;
+  const education = profileData.educations;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
       <Navbar />
@@ -97,7 +96,6 @@ const Profile = () => {
         <div className="grid grid-cols-12 gap-8">
           {/* Left Sidebar */}
           <div className="col-span-3">
-            {/* Profile Summary Card */}
             <Card className="mb-6 rounded-xl shadow-lg border-0 overflow-hidden bg-white/90 backdrop-blur-sm hover:shadow-xl transition-shadow duration-300">
               <div className="relative">
                 <div className="h-20 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 rounded-t-xl"></div>
@@ -128,7 +126,7 @@ const Profile = () => {
                 </div>
               </CardContent>
             </Card>
-            {/* Analytics Card */}
+
             <Card className="mb-6 rounded-xl shadow-lg border-0 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg">Analytics</CardTitle>
@@ -148,7 +146,7 @@ const Profile = () => {
                 </div>
               </CardContent>
             </Card>
-            {/* Resources Card */}
+
             <Card className="mb-6 rounded-xl shadow-lg border-0 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg">Resources</CardTitle>
@@ -168,7 +166,7 @@ const Profile = () => {
                 </div>
               </CardContent>
             </Card>
-            {/* Recent Activity Card */}
+
             <Card className="rounded-xl shadow-lg border-0 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg">Recent Activity</CardTitle>
@@ -201,7 +199,6 @@ const Profile = () => {
 
           {/* Main Content */}
           <div className="col-span-6">
-            {/* Profile Banner */}
             <Card className="mb-8 rounded-xl shadow-lg border-0 overflow-hidden bg-white/90 backdrop-blur-sm hover:shadow-xl transition-shadow duration-300">
               <div className="relative">
                 <div className="h-60 relative overflow-hidden rounded-t-xl">
@@ -302,20 +299,21 @@ const Profile = () => {
                   <CardTitle className="text-2xl">Experience</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {expError ? (
-                    <div className="text-red-500">{expError}</div>
-                  ) : (
-                    experience.length > 0 ? experience.map((exp, idx) => (
-                      <div key={idx} className="flex gap-4 items-start mb-6">
-                        <img src={exp.institutionLogo || "/default-institution.png"} alt={exp.institutionName} className="h-10 w-10 rounded shadow" />
-                        <div>
-                          <div className="font-semibold text-lg">{exp.institutionName}</div>
-                          <div className="text-sm text-gray-600">{exp.title}</div>
-                          <div className="text-xs text-gray-500">{exp.startYear} - {exp.endYear || "Present"} · {exp.location}</div>
-                          <div className="text-xs text-gray-500 mt-1">{exp.description}</div>
+                  {experience ? (
+                    <div key={experience.id} className="flex gap-4 items-start mb-6">
+                      <img src={experience.institutionLogo || "/default-institution.png"} alt={experience.institutionName} className="h-10 w-10 rounded shadow" />
+                      <div>
+                        <div className="font-semibold text-lg">{experience.institutionName || "Institution"}</div>
+                        <div className="text-sm text-gray-600">{experience.title || "Title"}</div>
+                        <div className="text-xs text-gray-500">
+                          {experience.startDate ? new Date(experience.startDate).toLocaleDateString() : "Start"} - 
+                          {experience.endDate ? new Date(experience.endDate).toLocaleDateString() : "Present"}
                         </div>
+                        <div className="text-xs text-gray-500 mt-1">{experience.description || "Description"}</div>
                       </div>
-                    )) : <div>No experience found.</div>
+                    </div>
+                  ) : (
+                    <div>No experience found.</div>
                   )}
                 </CardContent>
               </Card>
@@ -327,26 +325,26 @@ const Profile = () => {
                   <CardTitle className="text-2xl">Education</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {eduError ? (
-                    <div className="text-red-500">{eduError}</div>
-                  ) : (
-                    education.length > 0 ? education.map((edu, idx) => (
-                      <div key={idx} className="flex gap-4 items-start mb-6">
-                        <img src={edu.institutionLogo || "/default-institution.png"} alt={edu.institutionName} className="h-10 w-10 rounded shadow" />
-                        <div>
-                          <div className="font-semibold text-lg">{edu.institutionName}</div>
-                          <div className="text-sm text-gray-600">{edu.degree}</div>
-                          <div className="text-xs text-gray-500">{edu.startYear} - {edu.endYear}</div>
-                          <div className="text-xs text-gray-500 mt-1">{edu.description}</div>
+                  {education ? (
+                    <div key={education.id} className="flex gap-4 items-start mb-6">
+                      <img src={education.institutionLogo || "/default-institution.png"} alt={education.institutionName} className="h-10 w-10 rounded shadow" />
+                      <div>
+                        <div className="font-semibold text-lg">{education.institutionName || "Institution"}</div>
+                        <div className="text-sm text-gray-600">{education.title || "Degree"}</div>
+                        <div className="text-xs text-gray-500">
+                          {education.startDate ? new Date(education.startDate).toLocaleDateString() : "Start"} - 
+                          {education.endDate ? new Date(education.endDate).toLocaleDateString() : "Present"}
                         </div>
+                        <div className="text-xs text-gray-500 mt-1">{education.description || "Description"}</div>
                       </div>
-                    )) : <div>No education found.</div>
+                    </div>
+                  ) : (
+                    <div>No education found.</div>
                   )}
                 </CardContent>
               </Card>
             )}
 
-            {/* Posts Tab (static example) */}
             {activeTab === 'Posts' && (
               <Card className="rounded-xl shadow-lg border-0 bg-white/90 backdrop-blur-sm">
                 <CardHeader className="pb-6">
@@ -379,7 +377,6 @@ const Profile = () => {
               </Card>
             )}
 
-            {/* Activity Tab (static example) */}
             {activeTab === 'Activity' && (
               <Card className="rounded-xl shadow-lg border-0 bg-white/90 backdrop-blur-sm">
                 <CardHeader className="pb-6">
@@ -423,7 +420,7 @@ const Profile = () => {
             )}
           </div>
 
-          {/* Right Sidebar: Show institution info if available */}
+          {/* Right Sidebar: Institution */}
           <div className="col-span-3 space-y-6">
             <Card className="rounded-xl shadow-lg border-0 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="pb-4">
@@ -488,8 +485,10 @@ const Profile = () => {
               <CardContent className="flex flex-wrap gap-2">
                 <Badge variant="secondary" className="px-3 py-1">Cardiology</Badge>
                 <Badge variant="secondary" className="px-3 py-1">Pharmacy</Badge>
-                <Badge variant="secondary" className="px-3 py-1">Research</Badge>
-                <Badge variant="secondary" className="px-3 py-1">AI</Badge>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary" className="px-3 py-1">Research</Badge>
+                  <Badge variant="secondary" className="px-3 py-1">AI</Badge>
+                </div>
               </CardContent>
             </Card>
           </div>

@@ -159,8 +159,6 @@ await apiClient.post("/user/experience", {
       try {
   // 1. Check if user exists
   await userService.getUserById(userId);
-  // 2. If it exists, update
-  await userService.updateUser(userId, profileData);
   // (Optional) Show success message here
 } catch (error) {
   console.error('User does not exist or update failed:', error);
