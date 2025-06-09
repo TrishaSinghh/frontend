@@ -169,10 +169,22 @@ await apiClient.post("/user/experience", {
 
 
       // Update local storage
-      tokenStorage.setUser({
-        ...profile,
-        ...profileData,
-      });
+      // After updating profile data, merge it with the existing user
+const existingUser = tokenStorage.getUser() || {};
+const updatedUser = {
+  ...existingUser,
+  about,
+  location,
+  interests,
+  profilePicture: profilePicture || existingUser.profilePicture,
+  // Preserve other critical fields
+  userId: existingUser.userId || profile?.userId,
+  firstName: existingUser.firstName || profile?.firstName,
+  lastName: existingUser.lastName || profile?.lastName,
+  email: existingUser.email || profile?.email,
+  specialization: existingUser.specialization || profile?.specialization,
+};
+tokenStorage.setUser(updatedUser);
 
       toast({
         title: "Profile updated successfully!",
