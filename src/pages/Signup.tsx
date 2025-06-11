@@ -98,18 +98,12 @@ const Signup = () => {
       tokenStorage.setToken(loginResponse.token);
 
       // 3. Now create the user profile (with JWT token set)
-      await fetch('https://api.pharminc.in/private/user', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${tokenStorage.getToken()}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    firstName,
-    lastName,
-    specialization: specialty
-  })
+      await apiClient.post('/private/user', {
+  firstName,
+  lastName,
+  specialization: specialty
 });
+
 
 
       // 4. Store user info with userId for onboarding

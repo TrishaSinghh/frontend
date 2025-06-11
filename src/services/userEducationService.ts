@@ -1,4 +1,3 @@
-
 import { apiClient } from './apiClient';
 import { CreateUserEducationRequest, UserEducation, UpdateUserEducationRequest } from '../types/api';
 
@@ -13,7 +12,7 @@ export class UserEducationService {
    * @throws ApiError if creation fails
    * 
    * @example
-   * ```typescript
+   * ```
    * try {
    *   const education = await userEducationService.createUserEducation({
    *     title: 'Doctor of Medicine',
@@ -29,7 +28,7 @@ export class UserEducationService {
    * ```
    */
   async createUserEducation(educationData: CreateUserEducationRequest): Promise<UserEducation> {
-    return apiClient.post<UserEducation>('/user/education', educationData);
+    return apiClient.post<UserEducation>('/private/user/education', educationData);
   }
 
   /**
@@ -39,7 +38,10 @@ export class UserEducationService {
    * @throws ApiError if education not found or request fails
    */
   async getUserEducationById(id: string): Promise<UserEducation> {
-    return apiClient.get<UserEducation>(`/user/education/${id}`);
+    // If your backend supports public GETs, use `/public/user/education/${id}`
+    // If not, use `/private/user/education/${id}`
+    // Check your API docs: if education is only accessible to the user or admins, use private
+    return apiClient.get<UserEducation>(`/private/user/education/${id}`);
   }
 
   /**
@@ -50,7 +52,7 @@ export class UserEducationService {
    * @throws ApiError if update fails
    */
   async updateUserEducation(id: string, updateData: UpdateUserEducationRequest): Promise<UserEducation> {
-    return apiClient.put<UserEducation>(`/user/education/${id}`, updateData);
+    return apiClient.put<UserEducation>(`/private/user/education/${id}`, updateData);
   }
 
   /**
@@ -60,7 +62,7 @@ export class UserEducationService {
    * @throws ApiError if deletion fails
    */
   async deleteUserEducation(id: string): Promise<void> {
-    await apiClient.delete<void>(`/user/education/${id}`);
+    await apiClient.delete<void>(`/private/user/education/${id}`);
   }
 }
 
