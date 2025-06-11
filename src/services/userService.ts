@@ -27,7 +27,7 @@ export class UserService {
    * ```
    */
   async createUser(userData: CreateUserRequest): Promise<User> {
-    return apiClient.post<User>('/private/user', userData);
+    return apiClient.post<User>('/user', userData);
   }
 
   /**
@@ -47,7 +47,7 @@ export class UserService {
    * ```
    */
   async getUserById(id: string): Promise<User> {
-    return apiClient.get<User>(`/public/user/${id}`);
+    return apiClient.get<User>(`/user/${id}`);
   }
 
   /**
@@ -71,7 +71,7 @@ export class UserService {
    * ```
    */
   async updateUser(id: string, updateData: UpdateUserRequest): Promise<User> {
-    return apiClient.put<User>(`/private/user/${id}`, updateData);
+    return apiClient.put<User>(`/user/${id}`, updateData);
   }
 
   /**
@@ -91,7 +91,7 @@ export class UserService {
    * ```
    */
   async deleteUser(id: string): Promise<void> {
-    await apiClient.delete<void>(`/private/user/${id}`);
+    await apiClient.delete<void>(`/user/${id}`);
   }
 }
 

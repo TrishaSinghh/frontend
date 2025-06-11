@@ -26,7 +26,7 @@ export class InstitutionService {
    * ```
    */
   async createInstitution(institutionData: CreateInstitutionRequest): Promise<Institution> {
-    return apiClient.post<Institution>('/private/institution', institutionData);
+    return apiClient.post<Institution>('/institution', institutionData);
   }
 
   /**
@@ -36,7 +36,7 @@ export class InstitutionService {
    * @throws ApiError if institution not found or request fails
    */
   async getInstitutionById(id: string): Promise<Institution> {
-    return apiClient.get<Institution>(`/public/institution/${id}`);
+    return apiClient.get<Institution>(`/institution/${id}`);
   }
 
   /**
@@ -47,7 +47,7 @@ export class InstitutionService {
    * @throws ApiError if update fails
    */
   async updateInstitution(id: string, updateData: UpdateInstitutionRequest): Promise<Institution> {
-    return apiClient.put<Institution>(`/private/institution/${id}`, updateData);
+    return apiClient.put<Institution>(`/institution/${id}`, updateData);
   }
 
   /**
@@ -57,7 +57,7 @@ export class InstitutionService {
    * @throws ApiError if deletion fails
    */
   async deleteInstitution(id: string): Promise<void> {
-    await apiClient.delete<void>(`/private/institution/${id}`);
+    await apiClient.delete<void>(`/institution/${id}`);
   }
 }
 

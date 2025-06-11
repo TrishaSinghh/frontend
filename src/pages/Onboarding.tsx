@@ -102,7 +102,7 @@ const Onboarding = () => {
 
 // 1. Create institution if needed
 if (!createdInstitutionId) {
-  const institutionRes = await apiClient.post("private/institution", {
+  const institutionRes = await apiClient.post("/institution", {
     name: institutionName,
     about: institutionAbout,
     location: institutionLocation,
@@ -126,7 +126,7 @@ console.log("EDU POST", {
 });
 
 // 2. POST education (now institutionId is guaranteed)
-await apiClient.post("private/user/education", {
+await apiClient.post("/user/education", {
   title: eduTitle,
   description: eduDescription,
   startDate: new Date(eduStartDate).toISOString(),
@@ -135,7 +135,7 @@ await apiClient.post("private/user/education", {
 });
 
 // 3. POST experience
-await apiClient.post("private/user/experience", {
+await apiClient.post("/user/experience", {
   title: expTitle,
   description: expDescription,
   startDate: new Date(expStartDate).toISOString(),

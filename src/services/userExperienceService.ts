@@ -9,7 +9,7 @@ export class UserExperienceService {
    * @throws ApiError if creation fails
    */
   async createUserExperience(experienceData: CreateUserExperienceRequest): Promise<UserExperience> {
-    return apiClient.post<UserExperience>('/private/user/experience', experienceData);
+    return apiClient.post<UserExperience>('/user/experience', experienceData);
   }
 
   /**
@@ -20,7 +20,7 @@ export class UserExperienceService {
    */
   async getUserExperienceById(id: string): Promise<UserExperience> {
     // Use the endpoint as per your API docs (with a hyphen)
-    return apiClient.get<UserExperience>(`/private/user-experience/${id}`);
+    return apiClient.get<UserExperience>(`/user-experience/${id}`);
   }
 
   /**
@@ -33,9 +33,8 @@ export class UserExperienceService {
   async updateUserExperience(id: string, updateData: UpdateUserExperienceRequest): Promise<UserExperience> {
     // Check with your backend: is this /private/user/experience/{id} or /private/user-experience/{id}?
     // If slash:
-    return apiClient.put<UserExperience>(`/private/user/experience/${id}`, updateData);
-    // If hyphen:
-    // return apiClient.put<UserExperience>(`/private/user-experience/${id}`, updateData);
+    return apiClient.put<UserExperience>(`/user/experience/${id}`, updateData);
+   
   }
 
   /**
@@ -45,16 +44,15 @@ export class UserExperienceService {
    * @throws ApiError if deletion fails
    */
   async deleteUserExperience(id: string): Promise<void> {
-    // Check with your backend: is this /private/user/experience/{id} or /private/user-experience/{id}?
-    // If slash:
-    await apiClient.delete<void>(`/private/user/experience/${id}`);
+    
+    await apiClient.delete<void>(`/user/experience/${id}`);
     // If hyphen:
     // await apiClient.delete<void>(`/private/user-experience/${id}`);
   }
 
   // (Optional) If you want to fetch all experiences (public)
   async getAllUserExperiences(): Promise<UserExperience[]> {
-    return apiClient.get<UserExperience[]>(`/public/user/experience`);
+    return apiClient.get<UserExperience[]>(`/user/experience`);
   }
 }
 

@@ -20,7 +20,6 @@ const Profile = () => {
   const userObj = tokenStorage.getUser();
   const userId = userObj?.userId || userObj?.id;
 
-  // DEBUG: Attach to window for easy console access (remove in production)
   
   // Fetch profile data
   useEffect(() => {
@@ -358,7 +357,7 @@ const Profile = () => {
                       <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Calendar className="h-4 w-4" />
                         <span>2 days ago</span>
-                        <span>·</span>
+                        <span>Â·</span>
                         <span>42 likes</span>
                       </div>
                     </div>
@@ -368,7 +367,7 @@ const Profile = () => {
                       <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Calendar className="h-4 w-4" />
                         <span>1 week ago</span>
-                        <span>·</span>
+                        <span>Â·</span>
                         <span>18 likes</span>
                       </div>
                     </div>

@@ -14,21 +14,16 @@ import { tokenStorage } from "@/utils/tokenStorage";
 const HomeFeed = () => {
   const [likedPosts, setLikedPosts] = useState({});
   const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Institution names
   const [expInstitution, setExpInstitution] = useState(null);
   const [eduInstitution, setEduInstitution] = useState(null);
-
-  // Posting state
   const [posts, setPosts] = useState([]);
   const [postContent, setPostContent] = useState("");
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState("");
-
-  const toggleLike = (id) => {
-    setLikedPosts((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  const [loading, setLoading] = useState(true);
+  const [postLoading, setPostLoading] = useState(false);
+  const [feedLoading, setFeedLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Fetch user profile data
   useEffect(() => {
@@ -44,7 +39,6 @@ const HomeFeed = () => {
       .then(data => {
         const userInfo = Array.isArray(data) ? data[0] : data;
         setUserData(userInfo);
-
         // Fetch institutions for experience and education
         if (userInfo?.experiences?.institutionId) {
           fetch(`https://api.pharminc.in/institution/${userInfo.experiences.institutionId}`, {
@@ -68,6 +62,25 @@ const HomeFeed = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Fetch all posts from everyone
+  useEffect(() => {
+    setFeedLoading(true);
+    fetch("https://api.pharminc.in/public/post")
+      .then(res => res.ok ? res.json() : Promise.reject('Could not load posts'))
+      .then(data => {
+        if (Array.isArray(data)) {
+          setPosts(data);
+        } else {
+          setError("Posts data is not an array");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        setError("Failed to load posts");
+      })
+      .finally(() => setFeedLoading(false));
+  }, []);
+
   // Add a tag
   const handleAddTag = (e) => {
     e.preventDefault();
@@ -88,7 +101,9 @@ const HomeFeed = () => {
 
     const userObj = tokenStorage.getUser();
     const userId = userObj?.userId || userObj?.id;
+    if (!userId) return;
 
+    setPostLoading(true);
     try {
       const response = await fetch("https://api.pharminc.in/post", {
         method: "POST",
@@ -103,7 +118,7 @@ const HomeFeed = () => {
       });
       if (!response.ok) throw new Error("Failed to post");
       const postId = await response.json();
-      // Add the new post to the state (or fetch again if you want)
+      // Optimistically add the new post to the state
       setPosts(prev => [
         {
           id: postId,
@@ -113,7 +128,8 @@ const HomeFeed = () => {
           reactions: 0,
           shares: 0,
           saves: 0,
-          tags: [...tags] // For now, tags are only in the UI, not sent to backend
+          // For now, tags are only in the UI
+          tags: [...tags]
         },
         ...prev
       ]);
@@ -122,7 +138,15 @@ const HomeFeed = () => {
       setTagInput("");
     } catch (err) {
       console.error(err);
+      setError("Failed to create post");
+    } finally {
+      setPostLoading(false);
     }
+  };
+
+  // Toggle like
+  const toggleLike = (id) => {
+    setLikedPosts(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   if (loading && !userData) {
@@ -133,7 +157,7 @@ const HomeFeed = () => {
     );
   }
 
-  const user = userData?.user;
+  const user = userData?.user || userData;
   const experience = userData?.experiences;
   const education = userData?.educations;
 
@@ -156,13 +180,12 @@ const HomeFeed = () => {
 
               <div className="mt-10">
                 <h3 className="font-semibold text-lg text-gray-900">
-                  {user ? `${user.firstName} ${user.lastName}` : "Dr. Raghav Malhotra"}
+                  {user ? `${user.firstName} ${user.lastName}` : "Loading..."}
                 </h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  {user?.specialization || "MBBS, MD (General Medicine)"}
+                  {user?.specialization || "Specialization not set"}
                 </p>
 
-                {/* Location */}
                 {user?.location && (
                   <div className="flex items-center justify-center gap-2 text-gray-600 mb-4">
                     <MapPin className="h-4 w-4 text-blue-500" />
@@ -171,7 +194,6 @@ const HomeFeed = () => {
                 )}
 
                 <div className="space-y-3 text-sm text-gray-600">
-                  {/* Experience */}
                   {experience && (
                     <div className="flex items-center gap-3">
                       <FileText className="h-4 w-4 text-blue-500" />
@@ -180,7 +202,6 @@ const HomeFeed = () => {
                       </span>
                     </div>
                   )}
-                  {/* Education */}
                   {education && (
                     <div className="flex items-center gap-3">
                       <BookOpen className="h-4 w-4 text-blue-500" />
@@ -189,7 +210,6 @@ const HomeFeed = () => {
                       </span>
                     </div>
                   )}
-                  {/* Connections */}
                   <div className="flex items-center gap-3">
                     <Network className="h-4 w-4 text-blue-500" />
                     <span className="font-medium text-blue-600">412 connections</span>
@@ -202,7 +222,6 @@ const HomeFeed = () => {
               </div>
             </div>
           </div>
-
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6 hover:shadow-md transition-shadow duration-300">
             <h3 className="font-semibold text-gray-900 mb-4">Your Groups</h3>
             <ul className="space-y-4">
@@ -223,7 +242,6 @@ const HomeFeed = () => {
               See all groups →
             </Link>
           </div>
-
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
             <h3 className="font-semibold text-gray-900 mb-4">Trending Topics</h3>
             <div className="flex flex-wrap gap-2">
@@ -268,7 +286,6 @@ const HomeFeed = () => {
                       onChange={(e) => setPostContent(e.target.value)}
                       as="textarea"
                     />
-                    {/* Tags input */}
                     <div className="flex flex-wrap gap-2 mb-4">
                       {tags.map((tag, idx) => (
                         <Badge
@@ -308,8 +325,9 @@ const HomeFeed = () => {
                         variant="default"
                         size="sm"
                         className="px-6"
+                        disabled={postLoading}
                       >
-                        Post
+                        {postLoading ? "Posting..." : "Post"}
                       </Button>
                     </div>
                   </div>
@@ -320,258 +338,102 @@ const HomeFeed = () => {
 
           {/* Feed posts */}
           <div className="space-y-8">
-  {/* Your posts (on top) */}
-  {posts.map(post => (
-    <div key={post.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-      <div className="p-6">
-        <div className="flex justify-between">
-          <div className="flex gap-4">
-            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-sm">
-              <img
-                src={user?.profilePicture || "/pp.png"}
-                alt={user ? `${user.firstName} ${user.lastName}` : "User"}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="font-semibold text-gray-900">{user ? `${user.firstName} ${user.lastName}` : "User"}</h4>
-                <span className="text-gray-500 text-sm">{user?.specialization || "Specialization"}</span>
+            {feedLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="text-gray-600">Loading posts...</div>
               </div>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-gray-500 text-xs">{new Date(post.createdAt).toLocaleString()}</span>
+            ) : error ? (
+              <div className="flex justify-center py-8">
+                <div className="text-red-600">{error}</div>
               </div>
-            </div>
-          </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="mt-4">
-          <p className="text-gray-800 leading-relaxed">{post.content}</p>
-          {post.tags?.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4">
-              {post.tags.map((tag, idx) => (
-                <Badge key={idx} className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200 transition-colors">
-                  #{tag}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-6 mt-6 text-sm text-gray-500 border-t border-gray-100 pt-4">
-          <div className="flex items-center gap-2">
-            <Heart className="h-4 w-4" />
-            <span>{post.reactions || 0} likes</span>
-          </div>
-          <span>{/* comments count */}0 comments</span>
-          <span>{post.shares || 0} shares</span>
-        </div>
-      </div>
-
-      <div className="border-t border-gray-100 flex">
-        <Button
-          variant="ghost"
-          className="flex-1 rounded-none text-gray-600 hover:bg-red-50 hover:text-red-600 py-4"
-          onClick={() => toggleLike(post.id)}
-        >
-          <Heart className={`h-5 w-5 mr-2 ${likedPosts[post.id] ? 'text-red-500 fill-red-500' : ''}`} />
-          Like
-        </Button>
-        <Button variant="ghost" className="flex-1 rounded-none text-gray-600 hover:bg-blue-50 hover:text-blue-600 py-4">
-          <MessageSquare className="h-5 w-5 mr-2" />
-          Comment
-        </Button>
-        <Button variant="ghost" className="flex-1 rounded-none text-gray-600 hover:bg-green-50 hover:text-green-600 py-4">
-          <Share2 className="h-5 w-5 mr-2" />
-          Share
-        </Button>
-        <Button variant="ghost" className="flex-1 rounded-none text-gray-600 hover:bg-yellow-50 hover:text-yellow-600 py-4">
-          <Bookmark className="h-5 w-5 mr-2" />
-          Save
-        </Button>
-      </div>
-    </div>
-  ))}
-            {/* Example posts (unchanged) */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-              <div className="p-6">
-                <div className="flex justify-between">
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-sm">
-                      <img
-                        src="https://i.pravatar.cc/300?img=1"
-                        alt="Dr. Nirbhay Singh"
-                        className="w-full h-full object-cover"
-                      />
+            ) : posts.length === 0 ? (
+              <div className="flex justify-center py-8">
+                <div className="text-gray-600">No posts yet. Be the first to post!</div>
+              </div>
+            ) : (
+              posts.map((post) => (
+                <div key={post.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
+                  <div className="p-6">
+                    <div className="flex justify-between">
+                      <div className="flex gap-4">
+                        <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-sm">
+                          <img
+                            src={post.user?.profilePicture || "/pp.png"}
+                            alt={post.user?.firstName ? `${post.user.firstName} ${post.user.lastName}` : "User"}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-gray-900">
+                              {post.user?.firstName ? `${post.user.firstName} ${post.user.lastName}` : "Anonymous"}
+                            </h4>
+                            <span className="text-gray-500 text-sm">
+                              {post.user?.specialization ? `• ${post.user.specialization}` : ""}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-gray-500 text-xs">
+                              {new Date(post.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div>
+
+                    <div className="mt-4">
+                      <p className="text-gray-800 leading-relaxed">
+                        {post.content}
+                      </p>
+                      {/* Tags (if available) */}
+                      {post.tags?.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          {post.tags.map((tag, idx) => (
+                            <Badge key={idx} className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200 transition-colors">
+                              #{tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-6 mt-6 text-sm text-gray-500 border-t border-gray-100 pt-4">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-gray-900">Dr. Nirbhay Singh</h4>
-                        <span className="text-gray-500 text-sm">• Neurologist at DMCH</span>
+                        <Heart className="h-4 w-4" />
+                        <span>{post.reactions || 0} likes</span>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-200">Neurology</Badge>
-                        <span className="text-gray-500 text-xs">• 2 hours ago</span>
-                      </div>
+                      <span>Comments</span>
+                      <span>{post.shares || 0} shares</span>
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="mt-4">
-                  <p className="text-gray-800 leading-relaxed">
-                    Just published our latest research on neural pathways in Alzheimer's patients.
-                    The findings suggest a new potential approach to early intervention. Link to
-                    the paper in comments.
-                  </p>
-
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200 transition-colors">
-                      #Neurology
-                    </Badge>
-                    <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200 transition-colors">
-                      #Alzheimer
-                    </Badge>
-                    <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200 transition-colors">
-                      #Research
-                    </Badge>
-                  </div>
-
-                  <div className="mt-4 inline-block px-4 py-2 bg-gradient-to-r from-blue-50 to-blue-100 text-sm rounded-full text-blue-700 font-medium border border-blue-200">
-                    📄 Research Paper
+                  <div className="border-t border-gray-100 flex">
+                    <Button
+                      variant="ghost"
+                      className="flex-1 rounded-none text-gray-600 hover:bg-red-50 hover:text-red-600 py-4"
+                      onClick={() => toggleLike(post.id)}
+                    >
+                      <Heart className={`h-5 w-5 mr-2 ${likedPosts[post.id] ? 'text-red-500 fill-red-500' : ''}`} />
+                      Like
+                    </Button>
+                    <Button variant="ghost" className="flex-1 rounded-none text-gray-600 hover:bg-blue-50 hover:text-blue-600 py-4">
+                      <MessageSquare className="h-5 w-5 mr-2" />
+                      Comment
+                    </Button>
+                    <Button variant="ghost" className="flex-1 rounded-none text-gray-600 hover:bg-green-50 hover:text-green-600 py-4">
+                      <Share2 className="h-5 w-5 mr-2" />
+                      Share
+                    </Button>
+                    <Button variant="ghost" className="flex-1 rounded-none text-gray-600 hover:bg-yellow-50 hover:text-yellow-600 py-4">
+                      <Bookmark className="h-5 w-5 mr-2" />
+                      Save
+                    </Button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-6 mt-6 text-sm text-gray-500 border-t border-gray-100 pt-4">
-                  <div className="flex items-center gap-2">
-                    <Heart className="h-4 w-4" />
-                    <span>67 likes</span>
-                  </div>
-                  <span>34 comments</span>
-                  <span>14 shares</span>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-100 flex">
-                <Button
-                  variant="ghost" className="flex-1 rounded-none text-gray-600 hover:bg-red-50 hover:text-red-600 py-4"
-                  onClick={() => toggleLike('post1')}
-                >
-                  <Heart className={`h-5 w-5 mr-2 ${likedPosts['post1'] ? 'text-red-500 fill-red-500' : ''}`} />
-                  Like
-                </Button>
-                <Button variant="ghost" className="flex-1 rounded-none text-gray-600 hover:bg-blue-50 hover:text-blue-600 py-4">
-                  <MessageSquare className="h-5 w-5 mr-2" />
-                  Comment
-                </Button>
-                <Button variant="ghost" className="flex-1 rounded-none text-gray-600 hover:bg-green-50 hover:text-green-600 py-4">
-                  <Share2 className="h-5 w-5 mr-2" />
-                  Share
-                </Button>
-                <Button variant="ghost" className="flex-1 rounded-none text-gray-6 hover:bg-yellow-50 hover:text-yellow-600 py-4">
-                  <Bookmark className="h-5 w-5 mr-2" />
-                  Save
-                </Button>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-              <div className="p-6">
-                <div className="flex justify-between">
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-sm">
-                      <img
-                        src="https://i.pravatar.cc/300?img=5"
-                        alt="Dr. Elena Martinez"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-gray-900">Dr. Elena Martinez</h4>
-                        <span className="text-gray-500 text-sm">• Cardiologist at Cleveland Clinic</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200">Cardiology</Badge>
-                        <span className="text-gray-500 text-xs">• 5 hours ago</span>
-                      </div>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="mt-4">
-                  <p className="text-gray-800 leading-relaxed mb-6">
-                    Fascinating case today: 42-year-old patient with unusual ECG patterns showing
-                    intermittent Wenckebach phenomenon without symptoms. Anyone encountered similar
-                    cases recently?
-                  </p>
-
-                  <div className="rounded-xl overflow-hidden mb-4 border border-gray-200 shadow-sm">
-                    <img
-                      src="https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?q=80&w=1000&auto=format&fit=crop"
-                      alt="Medical equipment"
-                      className="w-full h-auto"
-                    />
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-200 transition-colors">
-                      #Cardiology
-                    </Badge>
-                    <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-200 transition-colors">
-                      #ECG
-                    </Badge>
-                    <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-200 transition-colors">
-                      #CaseStudy
-                    </Badge>
-                  </div>
-
-                  <div className="mt-4 inline-block px-4 py-2 bg-gradient-to-r from-yellow-50 to-yellow-100 text-sm rounded-full text-yellow-700 font-medium border border-yellow-200">
-                    🩺 Case Study
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-6 mt-6 text-sm text-gray-500 border-t border-gray-100 pt-4">
-                  <div className="flex items-center gap=2">
-                    <Heart className="h-4 w-4" />
-                    <span>56 likes</span>
-                  </div>
-                  <span>23 comments</span>
-                  <span>7 shares</span>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-100 flex">
-                <Button
-                  variant="ghost"
-                  className="flex-1 rounded-none text-gray-600 hover:bg-red-50 hover:text-red-600 py=4"
-                  onClick={() => toggleLike('post2')}
-                >
-                  <Heart className={`h-5 w-5 mr-2 ${likedPosts['post2'] ? 'text-red-500 fill-red-500' : ''}`} />
-                  Like
-                </Button>
-                <Button variant="ghost" className="flex-1 rounded-none text-gray-6 hover:bg-blue-50 hover:text-blue-600 py-4">
-                  <MessageSquare className="h-5 w-5 mr-2" />
-                  Comment
-                </Button>
-                <Button variant="ghost" className="flex-1 rounded-none text-gray-6 hover:bg-green-50 hover:text-green-600 py-4">
-                  <Share2 className="h-5 w-5 mr=2" />
-                  Share
-                </Button>
-                <Button variant="ghost" className="flex-1 rounded-none text-gray-6 hover:bg-yellow-50 hover:text-yellow-600 py-4">
-                  <Bookmark className="h-5 w-5 mr=2" />
-                  Save
-                </Button>
-              </div>
-            </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -582,14 +444,13 @@ const HomeFeed = () => {
               <h3 className="font-semibold text-gray-900">Journal Club</h3>
               <Link to="/journals" className="text-xs font-medium text-blue-600 hover:text-blue-700">See all</Link>
             </div>
-
             <div className="space-y-6">
               <div className="border-b border-gray-100 pb-6">
-                <div className="flex justify-between mb=3">
+                <div className="flex justify-between mb-3">
                   <div>
                     <h4 className="font-medium text-sm text-gray-900">AI in Clinical Diagnosis</h4>
-                    <p className="text-xs text-gray-500 mb=2">38 doctors discussing</p>
-                    <p className="text-xs text-gray=600 leading-relaxed">
+                    <p className="text-xs text-gray-500 mb-2">38 doctors discussing</p>
+                    <p className="text-xs text-gray-600 leading-relaxed">
                       Latest paper from NEJM on machine learning applications
                     </p>
                   </div>
@@ -604,13 +465,12 @@ const HomeFeed = () => {
                   <span className="text-xs text-gray-500">Today at 2 PM</span>
                 </div>
               </div>
-
               <div>
-                <div className="flex justify-between mb=3">
+                <div className="flex justify-between mb-3">
                   <div>
                     <h4 className="font-medium text-sm text-gray-900">Ethics Lab Case 003</h4>
-                    <p className="text-xs text-gray-500 mb=2">24 doctors discussing</p>
-                    <p className="text-xs text-gray=600 leading-relaxed">
+                    <p className="text-xs text-gray-500 mb-2">24 doctors discussing</p>
+                    <p className="text-xs text-gray-600 leading-relaxed">
                       Ethical implications of genetic testing in pediatrics
                     </p>
                   </div>
@@ -627,63 +487,59 @@ const HomeFeed = () => {
               </div>
             </div>
           </div>
-
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6 hover:shadow-md transition-shadow duration-300">
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-semibold text-gray-900">Featured Conferences</h3>
               <Link to="/conferences" className="text-xs font-medium text-blue-600 hover:text-blue-700">More</Link>
             </div>
-
             <div className="border-b border-gray-100 pb-6 mb-6">
-              <div className="flex justify-between mb=3">
+              <div className="flex justify-between mb-3">
                 <h4 className="font-medium text-sm text-gray-900">Global Health Summit 2024</h4>
                 <Button variant="ghost" size="icon" className="h-6 w-6 text-yellow-500">
                   <Bookmark className="h-4 w-4" fill="currentColor" />
                 </Button>
               </div>
-              <p className="text-xs text-gray-600 mb=3">March 15-17, 2024 • Boston, MA</p>
-              <div className="flex gap-2 mb=4">
+              <p className="text-xs text-gray-600 mb-3">March 15-17, 2024 • Boston, MA</p>
+              <div className="flex gap-2 mb-4">
                 <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">In-Person</Badge>
-                <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue=700">CME: 32</Badge>
+                <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">CME: 32</Badge>
               </div>
-              <Button size="sm" className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-7 text-white shadow-sm">
+              <Button size="sm" className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm">
                 Register Now
               </Button>
             </div>
           </div>
-
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="font-semibold text-gray=900">Upcoming Events</h3>
+              <h3 className="font-semibold text-gray-900">Upcoming Events</h3>
               <Link to="/events" className="text-xs font-medium text-blue-600 hover:text-blue-700">See all</Link>
             </div>
-
             <div className="space-y-6">
               <div className="flex gap-4">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 text-center min-w-16 shadow-sm border border-blue=200">
-                  <span className="block text-xs text-blue=600 font-medium">OCT</span>
-                  <span className="block text-lg font-bold text-blue=700">15</span>
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 text-center min-w-16 shadow-sm border border-blue-200">
+                  <span className="block text-xs text-blue-600 font-medium">OCT</span>
+                  <span className="block text-lg font-bold text-blue-700">15</span>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-sm text-gray=900 mb=1">Advanced Cardiac Imaging Workshop</h4>
-                  <p className="text-xs text-gray=600 mb=1">10:00 AM - 4:00 PM</p>
-                  <p className="text-xs text-gray=500 mb=2">Mayo Clinic, Rochester</p>
-                  <div className="flex gap=2">
+                  <h4 className="font-medium text-sm text-gray-900 mb-1">Advanced Cardiac Imaging Workshop</h4>
+                  <p className="text-xs text-gray-600 mb-1">10:00 AM - 4:00 PM</p>
+                  <p className="text-xs text-gray-500 mb-2">Mayo Clinic, Rochester</p>
+                  <div className="flex gap-2">
                     <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">CME: 6</Badge>
-                    <Badge variant="outline" className="text-xs bg-green-50 border-green=200 text-green-700">8 spots</Badge>
+                    <Badge variant="outoutline" className="text-xs bg-green-50 border-green-200 text-green-700">8 spots</Badge>
                   </div>
                 </div>
               </div>
-              <div className="flex gap=4">
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 text-center min-w-16 shadow-sm border border-purple=200">
-                  <span className="block text-xs text-purple=600 font-medium">OCT</span>
-                  <span className="block text-lg font-bold text-purple=700">18</span>
+              <div className="flex gap-4">
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 text-center min-w-16 shadow-sm border border-purple-200">
+                  <span className="block text-xs text-purple-600 font-medium">OCT</span>
+                  <span className="block text-lg font-bold text-purple-700">18</span>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-sm text-gray=900 mb=1">Research Methodology Seminar</h4>
-                  <p className="text-xs text-gray=600 mb=1">Virtual Event</p>
-                  <p className="text-xs text-gray=500 mb=2">2:00 PM - 5:00 PM EST</p>
-                  <Button variant="link" size="sm" className="text-xs h-6 p-0 font-medium text-blue-600 hover:text-blue=700">
+                  <h4 className="font-medium text-sm text-gray-900 mb-1">Research Methodology Seminar</h4>
+                  <p className="text-xs text-gray-600 mb-1">Virtual Event</p>
+                  <p className="text-xs text-gray-500 mb-2">2:00 PM - 5:00 PM EST</p>
+                  <Button variant="link" size="sm" className="text-xs h-6 p-0 font-medium text-blue-600 hover:text-blue-700">
                     Free Registration →
                   </Button>
                 </div>

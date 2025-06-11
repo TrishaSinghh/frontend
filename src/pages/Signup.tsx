@@ -98,13 +98,11 @@ const Signup = () => {
       tokenStorage.setToken(loginResponse.token);
 
       // 3. Now create the user profile (with JWT token set)
-      await apiClient.post('/private/user', {
-  firstName,
-  lastName,
-  specialization: specialty
-});
-
-
+      await apiClient.post('/user', {
+        firstName,
+        lastName,
+        specialization: specialty
+      });
 
       // 4. Store user info with userId for onboarding
       tokenStorage.setUser({
@@ -214,7 +212,7 @@ const Signup = () => {
                   className="text-gray-500 hover:text-gray-700"
                   disabled={isLoading}
                 >
-                  ← Back
+                  â† Back
                 </Button>
                 <div className="flex items-center gap-2">
                   {userType === "doctor" ? (
@@ -266,7 +264,7 @@ const Signup = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" name="password" type="password" placeholder="••••••••" required disabled={isLoading} />
+                    <Input id="password" name="password" type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required disabled={isLoading} />
                   </div>
 
                   <div className="space-y-2">
@@ -352,7 +350,7 @@ const Signup = () => {
                         Forgot password?
                       </Link>
                     </div>
-                    <Input id="login-password" name="password" type="password" placeholder="••••••••" required disabled={isLoading} />
+                    <Input id="login-password" name="password" type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required disabled={isLoading} />
                   </div>
 
                   <div className="flex items-center space-x-2">
