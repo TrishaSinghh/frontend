@@ -1,555 +1,358 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Home, Network, FileText, BookOpen, Bell, MessageCircle,
-  Search, Filter, Image, FileIcon, Link2, MoreVertical, Heart,
-  MessageSquare, Share2, Bookmark, Plus, MapPin
+  Home, BookOpen, MessageCircle, FileText, Bell, Network,
+  Filter, Image, FileIcon, Link2, MoreVertical, Heart,
+  MessageSquare, Share2, Bookmark
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Navbar from "@/components/Navbar";
-import { tokenStorage } from "@/utils/tokenStorage";
 
-const HomeFeed = () => {
-  const [likedPosts, setLikedPosts] = useState({});
-  const [userData, setUserData] = useState(null);
-  const [expInstitution, setExpInstitution] = useState(null);
-  const [eduInstitution, setEduInstitution] = useState(null);
-  const [posts, setPosts] = useState([]);
-  const [postContent, setPostContent] = useState("");
-  const [tags, setTags] = useState([]);
-  const [tagInput, setTagInput] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [postLoading, setPostLoading] = useState(false);
-  const [feedLoading, setFeedLoading] = useState(false);
-  const [error, setError] = useState(null);
+// Mock user and post data
+const user = {
+  firstName: "John",
+  lastName: "Doe",
+  profilePicture: "/pp.png", // Updated to use pp.png
+  specialization: "Cardiology",
+  location: "Boston, MA"
+};
 
-  // Fetch user profile data
-  useEffect(() => {
-    const userObj = tokenStorage.getUser();
-    const userId = userObj?.userId || userObj?.id;
-    if (!userId) return;
-
-    setLoading(true);
-    fetch(`https://api.pharminc.in/user/${userId}`, {
-      headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
-    })
-      .then(res => res.ok ? res.json() : Promise.reject('Could not load user'))
-      .then(data => {
-        const userInfo = Array.isArray(data) ? data[0] : data;
-        setUserData(userInfo);
-        // Fetch institutions for experience and education
-        if (userInfo?.experiences?.institutionId) {
-          fetch(`https://api.pharminc.in/institution/${userInfo.experiences.institutionId}`, {
-            headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
-          })
-            .then(res => res.ok ? res.json() : null)
-            .then(inst => setExpInstitution(inst));
-        }
-        if (userInfo?.educations?.institutionId) {
-          fetch(`https://api.pharminc.in/institution/${userInfo.educations.institutionId}`, {
-            headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
-          })
-            .then(res => res.ok ? res.json() : null)
-            .then(inst => setEduInstitution(inst));
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        setUserData(null);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  // Fetch all posts from everyone
-  useEffect(() => {
-    setFeedLoading(true);
-    fetch("https://api.pharminc.in/public/post")
-      .then(res => res.ok ? res.json() : Promise.reject('Could not load posts'))
-      .then(data => {
-        if (Array.isArray(data)) {
-          setPosts(data);
-        } else {
-          setError("Posts data is not an array");
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        setError("Failed to load posts");
-      })
-      .finally(() => setFeedLoading(false));
-  }, []);
-
-  // Add a tag
-  const handleAddTag = (e) => {
-    e.preventDefault();
-    if (!tagInput.trim()) return;
-    setTags(prev => [...prev, tagInput]);
-    setTagInput("");
-  };
-
-  // Remove a tag
-  const handleRemoveTag = (tagToRemove) => {
-    setTags(prev => prev.filter(tag => tag !== tagToRemove));
-  };
-
-  // Post a new message
-  const handlePostSubmit = async (e) => {
-    e.preventDefault();
-    if (!postContent.trim()) return;
-
-    const userObj = tokenStorage.getUser();
-    const userId = userObj?.userId || userObj?.id;
-    if (!userId) return;
-
-    setPostLoading(true);
-    try {
-      const response = await fetch("https://api.pharminc.in/post", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${tokenStorage.getToken()}`
-        },
-        body: JSON.stringify({
-          content: postContent,
-          userId
-        })
-      });
-      if (!response.ok) throw new Error("Failed to post");
-      const postId = await response.json();
-      // Optimistically add the new post to the state
-      setPosts(prev => [
-        {
-          id: postId,
-          content: postContent,
-          userId,
-          createdAt: new Date().toISOString(),
-          reactions: 0,
-          shares: 0,
-          saves: 0,
-          // For now, tags are only in the UI
-          tags: [...tags]
-        },
-        ...prev
-      ]);
-      setPostContent("");
-      setTags([]);
-      setTagInput("");
-    } catch (err) {
-      console.error(err);
-      setError("Failed to create post");
-    } finally {
-      setPostLoading(false);
-    }
-  };
-
-  // Toggle like
-  const toggleLike = (id) => {
-    setLikedPosts(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  if (loading && !userData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 flex items-center justify-center">
-        <div className="text-xl text-gray-700">Loading profile...</div>
-      </div>
-    );
+const posts = [
+  {
+    id: 1,
+    author: "Dr. Robert Kim",
+    avatar: "https://i.pravatar.cc/300?img=1",
+    role: "Neurologist at Mass General Hospital",
+    time: "2 hours ago",
+    content: "Just published our latest research on neural pathways in Alzheimer's patients. The findings suggest a new potential approach to early intervention. Link to the paper in comments.",
+    tags: ["Neurology", "Alzheimer", "Research"],
+    type: "Research Paper",
+    likes: 67,
+    comments: 34,
+    shares: 14,
+  },
+  {
+    id: 2,
+    author: "Dr. Elena Martinez",
+    avatar: "https://i.pravatar.cc/300?img=5",
+    role: "Cardiologist at Cleveland Clinic",
+    time: "5 hours ago",
+    content: "Fascinating case today: 42-year-old patient with unusual ECG patterns showing intermittent Wenckebach phenomenon without symptoms. Anyone encountered similar cases recently?",
+    tags: ["Cardiology", "ECG", "CaseStudy"],
+    type: "Case Study",
+    likes: 56,
+    comments: 23,
+    shares: 7,
+    image: "https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?q=80&w=1000&auto=format&fit=crop"
   }
+];
 
-  const user = userData?.user || userData;
-  const experience = userData?.experiences;
-  const education = userData?.educations;
+const rightSidebar = [
+  {
+    section: "Journal Club",
+    items: [
+      {
+        title: "AI in Clinical Diagnosis",
+        doctors: 28,
+        desc: "Latest paper from NEJM on machine learning applications",
+        time: "Today at 2 PM"
+      },
+      {
+        title: "Ethics Lab Case 003",
+        doctors: 24,
+        desc: "Ethical implications of genetic testing in pediatrics",
+        time: "Tomorrow at 3 PM"
+      }
+    ]
+  },
+  {
+    section: "Featured Conferences",
+    items: [
+      {
+        title: "Global Health Summit 2024",
+        date: "March 15-17, 2024 • Boston, MA",
+        cme: 32,
+        mode: "In-Person"
+      }
+    ]
+  },
+  {
+    section: "Upcoming Events",
+    items: [
+      {
+        month: "OCT",
+        day: "15",
+        title: "Advanced Cardiac Imaging Workshop",
+        time: "10:00 AM - 4:00 PM",
+        location: "Mayo Clinic, Rochester",
+        cme: 6,
+        spots: 8
+      },
+      {
+        month: "OCT",
+        day: "18",
+        title: "Research Methodology Seminar",
+        time: "2:00 PM - 5:00 PM EST",
+        location: "Virtual Event",
+        cme: 0,
+        spots: null
+      }
+    ]
+  }
+];
+
+export default function HomeFeed() {
+  const [liked, setLiked] = useState({});
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
-      <Navbar />
-      <main className="pt-16 container mx-auto px-4 py-8 grid grid-cols-12 gap-8">
-        {/* Left sidebar */}
-        <aside className="col-span-3">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 hover:shadow-md transition-shadow duration-300">
-            <div className="h-20 bg-gradient-to-r from-blue-500 to-blue-600"></div>
-            <div className="p-6 relative">
-              <div className="absolute -top-8 left-6 w-16 h-16 rounded-full border-4 border-white overflow-hidden shadow-lg">
-                <img
-                  src={user?.profilePicture || "/pp.png"}
-                  alt={user ? `${user.firstName} ${user.lastName}` : "User"}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Logo */}
+      <div className="fixed top-0 left-0 w-56 h-16 bg-white border-b border-r border-gray-200 flex items-center justify-center z-50">
+        <img src="/logo.png" alt="Logo" className="h-10" />
+      </div>
 
-              <div className="mt-10">
-                <h3 className="font-semibold text-lg text-gray-900">
-                  {user ? `${user.firstName} ${user.lastName}` : "Loading..."}
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  {user?.specialization || "Specialization not set"}
-                </p>
+      {/* Fixed Left Sidebar */}
+      <aside
+        className="fixed top-16 left-0 w-56 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 flex flex-col p-4 z-40 overflow-y-auto"
+        style={{ minHeight: 0 }}
+      >
+        {/* Updated Profile Card - LinkedIn Style */}
+        <div className="relative w-full bg-white rounded-xl shadow border border-gray-100 overflow-visible mb-6">
+  {/* Banner/Header */}
+  <div className="w-full h-28 bg-gray-200 rounded-t-xl overflow-hidden">
+    <img
+      src="/banner.png"
+      alt="Profile Banner"
+      className="w-full h-full object-cover"
+      style={{ objectPosition: "center" }}
+    />
+  </div>
+  {/* Profile Picture: Overlapping the banner, LinkedIn style */}
+  <div
+    className="absolute left-1/2"
+    style={{
+      transform: "translate(-50%, -50%)",
+      top: "112px", // h-28 = 112px, so this puts center of image at bottom of banner
+      zIndex: 10
+    }}
+  >
+    <img
+      src="/pp.png"
+      alt="Profile"
+      className="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
+    />
+  </div>
+  {/* Profile Info */}
+  <div className="pt-14 pb-4 flex flex-col items-center">
+    <h2 className="text-lg font-bold text-gray-900">
+      John Doe
+    </h2>
+    <div className="text-blue-700 text-sm font-medium mt-1">
+      Cardiology
+    </div>
+    <div className="text-gray-500 text-sm">
+      Boston, MA
+    </div>
+  </div>
+</div>
 
-                {user?.location && (
-                  <div className="flex items-center justify-center gap-2 text-gray-600 mb-4">
-                    <MapPin className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm">{user.location}</span>
-                  </div>
-                )}
-
-                <div className="space-y-3 text-sm text-gray-600">
-                  {experience && (
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-4 w-4 text-blue-500" />
-                      <span>
-                        {experience.title || "Experience"} at {expInstitution?.name || "Institution"}
-                      </span>
-                    </div>
-                  )}
-                  {education && (
-                    <div className="flex items-center gap-3">
-                      <BookOpen className="h-4 w-4 text-blue-500" />
-                      <span>
-                        {education.title || "Education"} from {eduInstitution?.name || "Institution"}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3">
-                    <Network className="h-4 w-4 text-blue-500" />
-                    <span className="font-medium text-blue-600">412 connections</span>
-                  </div>
-                </div>
-
-                <Link to="/profile" className="inline-block mt-4 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
-                  View your profile →
-                </Link>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6 hover:shadow-md transition-shadow duration-300">
-            <h3 className="font-semibold text-gray-900 mb-4">Your Groups</h3>
-            <ul className="space-y-4">
-              <li className="flex items-center gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors">
-                <span className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-600">C</span>
-                <span className="text-sm font-medium text-gray-700">Cardiology Research Network</span>
-              </li>
-              <li className="flex items-center gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors">
-                <span className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-sm font-semibold text-green-600">M</span>
-                <span className="text-sm font-medium text-gray-700">Medical Ethics Forum</span>
-              </li>
-              <li className="flex items-center gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors">
-                <span className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm font-semibold text-purple-600">W</span>
-                <span className="text-sm font-medium text-gray-700">Women in Medicine</span>
-              </li>
-            </ul>
-            <Link to="/groups" className="inline-block mt-4 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
-              See all groups →
+        {/* Navigation */}
+        <nav className="mt-2 space-y-0">
+          {[
+            { name: "Home", icon: <Home className="h-4 w-4" />, path: "/" },
+            { name: "Profile", icon: <BookOpen className="h-4 w-4" />, path: "/profile" },
+            { name: "Messages", icon: <MessageCircle className="h-4 w-4" />, path: "/messages" },
+            { name: "Research", icon: <FileText className="h-4 w-4" />, path: "/research" },
+            { name: "Notifications", icon: <Bell className="h-4 w-4" />, path: "/notifications" },
+            { name: "Societies", icon: <Network className="h-4 w-4" />, path: "/societies" },
+          ].map(item => (
+            <Link
+              key={item.name}
+              to={item.path}
+              className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-blue-50 text-sm text-gray-700"
+            >
+              {item.icon}
+              <span>{item.name}</span>
             </Link>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
-            <h3 className="font-semibold text-gray-900 mb-4">Trending Topics</h3>
-            <div className="flex flex-wrap gap-2">
-              {['Cardiology', 'MedicalEthics', 'ResearchMethods', 'AIinhealthcare', 'PatientCare'].map((tag) => (
-                <Badge
-                  key={tag}
-                  className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200 cursor-pointer transition-colors font-medium"
-                >
-                  #{tag}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </aside>
+          ))}
+        </nav>
+      </aside>
 
-        {/* Main feed */}
-        <div className="col-span-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 hover:shadow-md transition-shadow duration-300">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="font-semibold text-xl text-gray-900">Your Feed</h2>
-              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 hover:bg-blue-50">
+      {/* Main Content and Right Sidebar */}
+      <div
+        className="flex flex-row"
+        style={{
+          marginLeft: "14rem", // w-56 = 224px = 14rem
+          minHeight: "100vh"
+        }}
+      >
+        {/* Center Feed */}
+        <main className="flex-1 flex flex-col items-center px-4">
+          {/* Your Feed and Filter */}
+          <div className="bg-white rounded-xl shadow border border-gray-100 w-full max-w-2xl mt-6 px-6 py-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Your Feed</h2>
+              <Button variant="ghost" size="sm">
                 <Filter className="h-4 w-4 mr-2" />
                 Filter
               </Button>
             </div>
-            <div className="p-6">
-              <form onSubmit={handlePostSubmit}>
-                <div className="flex gap-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-sm">
-                    <img
-                      src={user?.profilePicture || "/pp.png"}
-                      alt={user ? `${user.firstName} ${user.lastName}` : "User"}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-grow">
-                    <Input
-                      type="text"
-                      placeholder="Share your medical insights, research, or case studies..."
-                      className="bg-gray-50 border-gray-200 mb-4 h-32 text-base focus:bg-white focus:ring-2 focus:ring-blue-500/20 transition-all"
-                      value={postContent}
-                      onChange={(e) => setPostContent(e.target.value)}
-                      as="textarea"
-                    />
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {tags.map((tag, idx) => (
-                        <Badge
-                          key={idx}
-                          className="bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-200 cursor-pointer transition-colors"
-                          onClick={() => handleRemoveTag(tag)}
-                        >
-                          #{tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        type="text"
-                        placeholder="Add a tag..."
-                        className="flex-grow bg-gray-50 border-gray-200"
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddTag(e);
-                          }
-                        }}
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleAddTag}
-                      >
-                        Add Tag
-                      </Button>
-                    </div>
-                    <div className="flex justify-end mt-4">
-                      <Button
-                        type="submit"
-                        variant="default"
-                        size="sm"
-                        className="px-6"
-                        disabled={postLoading}
-                      >
-                        {postLoading ? "Posting..." : "Post"}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </form>
+            {/* Composer */}
+            <div className="flex gap-3">
+              <img
+                src={user.profilePicture}
+                alt={user.firstName}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+              <Input
+                type="text"
+                placeholder="Share your medical insights, research, or case studies…"
+                className="flex-1 bg-gray-50 border-gray-200 h-10 text-sm"
+              />
             </div>
-          </div>
-
-          {/* Feed posts */}
-          <div className="space-y-8">
-            {feedLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="text-gray-600">Loading posts...</div>
-              </div>
-            ) : error ? (
-              <div className="flex justify-center py-8">
-                <div className="text-red-600">{error}</div>
-              </div>
-            ) : posts.length === 0 ? (
-              <div className="flex justify-center py-8">
-                <div className="text-gray-600">No posts yet. Be the first to post!</div>
-              </div>
-            ) : (
-              posts.map((post) => (
-                <div key={post.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-                  <div className="p-6">
-                    <div className="flex justify-between">
-                      <div className="flex gap-4">
-                        <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-sm">
-                          <img
-                            src={post.user?.profilePicture || "/pp.png"}
-                            alt={post.user?.firstName ? `${post.user.firstName} ${post.user.lastName}` : "User"}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-gray-900">
-                              {post.user?.firstName ? `${post.user.firstName} ${post.user.lastName}` : "Anonymous"}
-                            </h4>
-                            <span className="text-gray-500 text-sm">
-                              {post.user?.specialization ? `• ${post.user.specialization}` : ""}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-gray-500 text-xs">
-                              {new Date(post.createdAt).toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    <div className="mt-4">
-                      <p className="text-gray-800 leading-relaxed">
-                        {post.content}
-                      </p>
-                      {/* Tags (if available) */}
-                      {post.tags?.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-4">
-                          {post.tags.map((tag, idx) => (
-                            <Badge key={idx} className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200 transition-colors">
-                              #{tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-6 mt-6 text-sm text-gray-500 border-t border-gray-100 pt-4">
-                      <div className="flex items-center gap-2">
-                        <Heart className="h-4 w-4" />
-                        <span>{post.reactions || 0} likes</span>
-                      </div>
-                      <span>Comments</span>
-                      <span>{post.shares || 0} shares</span>
-                    </div>
-                  </div>
-                  <div className="border-t border-gray-100 flex">
-                    <Button
-                      variant="ghost"
-                      className="flex-1 rounded-none text-gray-600 hover:bg-red-50 hover:text-red-600 py-4"
-                      onClick={() => toggleLike(post.id)}
-                    >
-                      <Heart className={`h-5 w-5 mr-2 ${likedPosts[post.id] ? 'text-red-500 fill-red-500' : ''}`} />
-                      Like
-                    </Button>
-                    <Button variant="ghost" className="flex-1 rounded-none text-gray-600 hover:bg-blue-50 hover:text-blue-600 py-4">
-                      <MessageSquare className="h-5 w-5 mr-2" />
-                      Comment
-                    </Button>
-                    <Button variant="ghost" className="flex-1 rounded-none text-gray-600 hover:bg-green-50 hover:text-green-600 py-4">
-                      <Share2 className="h-5 w-5 mr-2" />
-                      Share
-                    </Button>
-                    <Button variant="ghost" className="flex-1 rounded-none text-gray-600 hover:bg-yellow-50 hover:text-yellow-600 py-4">
-                      <Bookmark className="h-5 w-5 mr-2" />
-                      Save
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Right sidebar */}
-        <aside className="col-span-3">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6 hover:shadow-md transition-shadow duration-300">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-semibold text-gray-900">Journal Club</h3>
-              <Link to="/journals" className="text-xs font-medium text-blue-600 hover:text-blue-700">See all</Link>
-            </div>
-            <div className="space-y-6">
-              <div className="border-b border-gray-100 pb-6">
-                <div className="flex justify-between mb-3">
-                  <div>
-                    <h4 className="font-medium text-sm text-gray-900">AI in Clinical Diagnosis</h4>
-                    <p className="text-xs text-gray-500 mb-2">38 doctors discussing</p>
-                    <p className="text-xs text-gray-600 leading-relaxed">
-                      Latest paper from NEJM on machine learning applications
-                    </p>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-yellow-500">
-                    <Bookmark className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex justify-between items-center">
-                  <Button size="sm" variant="outline" className="h-8 text-xs font-medium border-blue-200 text-blue-600 hover:bg-blue-50">
-                    Join Discussion
-                  </Button>
-                  <span className="text-xs text-gray-500">Today at 2 PM</span>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between mb-3">
-                  <div>
-                    <h4 className="font-medium text-sm text-gray-900">Ethics Lab Case 003</h4>
-                    <p className="text-xs text-gray-500 mb-2">24 doctors discussing</p>
-                    <p className="text-xs text-gray-600 leading-relaxed">
-                      Ethical implications of genetic testing in pediatrics
-                    </p>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-yellow-500">
-                    <Bookmark className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex justify-between items-center">
-                  <Button size="sm" variant="outline" className="h-8 text-xs font-medium border-green-200 text-green-600 hover:bg-green-50">
-                    Join Discussion
-                  </Button>
-                  <span className="text-xs text-gray-500">Tomorrow at 3 PM</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6 hover:shadow-md transition-shadow duration-300">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-semibold text-gray-900">Featured Conferences</h3>
-              <Link to="/conferences" className="text-xs font-medium text-blue-600 hover:text-blue-700">More</Link>
-            </div>
-            <div className="border-b border-gray-100 pb-6 mb-6">
-              <div className="flex justify-between mb-3">
-                <h4 className="font-medium text-sm text-gray-900">Global Health Summit 2024</h4>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-yellow-500">
-                  <Bookmark className="h-4 w-4" fill="currentColor" />
-                </Button>
-              </div>
-              <p className="text-xs text-gray-600 mb-3">March 15-17, 2024 • Boston, MA</p>
-              <div className="flex gap-2 mb-4">
-                <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">In-Person</Badge>
-                <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">CME: 32</Badge>
-              </div>
-              <Button size="sm" className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm">
-                Register Now
+            <div className="flex gap-2 mt-3">
+              <Button variant="ghost" size="sm" className="text-blue-600 hover:bg-blue-50">
+                <Image className="h-4 w-4 mr-2" />
+                Photo
+              </Button>
+              <Button variant="ghost" size="sm" className="text-green-600 hover:bg-green-50">
+                <FileIcon className="h-4 w-4 mr-2" />
+                Document
+              </Button>
+              <Button variant="ghost" size="sm" className="text-purple-600 hover:bg-purple-50">
+                <Link2 className="h-4 w-4 mr-2" />
+                Video
+              </Button>
+              <Button variant="ghost" size="sm" className="text-yellow-600 hover:bg-yellow-50">
+                <FileText className="h-4 w-4 mr-2" />
+                Poll
               </Button>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-semibold text-gray-900">Upcoming Events</h3>
-              <Link to="/events" className="text-xs font-medium text-blue-600 hover:text-blue-700">See all</Link>
-            </div>
-            <div className="space-y-6">
-              <div className="flex gap-4">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 text-center min-w-16 shadow-sm border border-blue-200">
-                  <span className="block text-xs text-blue-600 font-medium">OCT</span>
-                  <span className="block text-lg font-bold text-blue-700">15</span>
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-sm text-gray-900 mb-1">Advanced Cardiac Imaging Workshop</h4>
-                  <p className="text-xs text-gray-600 mb-1">10:00 AM - 4:00 PM</p>
-                  <p className="text-xs text-gray-500 mb-2">Mayo Clinic, Rochester</p>
-                  <div className="flex gap-2">
-                    <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">CME: 6</Badge>
-                    <Badge variant="outoutline" className="text-xs bg-green-50 border-green-200 text-green-700">8 spots</Badge>
+          {/* Posts */}
+          <div className="w-full max-w-2xl mt-4 flex flex-col gap-4">
+            {posts.map(post => (
+              <div key={post.id} className="bg-white rounded-xl shadow border border-gray-100 px-6 py-4 flex flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  <img src={post.avatar} alt={post.author} className="w-9 h-9 rounded-full object-cover" />
+                  <div className="flex flex-col leading-tight">
+                    <span className="font-semibold text-sm text-gray-900">{post.author}</span>
+                    <span className="text-xs text-gray-500">{post.role} • {post.time}</span>
+                  </div>
+                  <div className="ml-auto">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-gray-700">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 text-center min-w-16 shadow-sm border border-purple-200">
-                  <span className="block text-xs text-purple-600 font-medium">OCT</span>
-                  <span className="block text-lg font-bold text-purple-700">18</span>
+                <div className="text-sm text-gray-800">{post.content}</div>
+                {post.image && (
+                  <div className="rounded-lg overflow-hidden border border-gray-100">
+                    <img src={post.image} alt="post" className="w-full h-auto" />
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-1">
+                  {post.tags.map(tag => (
+                    <span key={tag} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">#{tag}</span>
+                  ))}
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-sm text-gray-900 mb-1">Research Methodology Seminar</h4>
-                  <p className="text-xs text-gray-600 mb-1">Virtual Event</p>
-                  <p className="text-xs text-gray-500 mb-2">2:00 PM - 5:00 PM EST</p>
-                  <Button variant="link" size="sm" className="text-xs h-6 p-0 font-medium text-blue-600 hover:text-blue-700">
-                    Free Registration →
+                <div className="text-xs text-blue-700 font-medium">{post.type === "Research Paper" ? "📄 Research Paper" : "🩺 Case Study"}</div>
+                <div className="flex items-center gap-4 text-xs text-gray-500 border-t border-gray-100 pt-2">
+                  <div className="flex items-center gap-1 cursor-pointer" onClick={() => setLiked(l => ({ ...l, [post.id]: !l[post.id] }))}>
+                    <Heart className={`h-3.5 w-3.5 ${liked[post.id] ? "fill-red-500 text-red-500" : ""}`} />
+                    <span>{post.likes} likes</span>
+                  </div>
+                  <span>{post.comments} comments</span>
+                  <span>{post.shares} shares</span>
+                </div>
+                <div className="flex border-t border-gray-100 mt-2 pt-2 gap-1">
+                  <Button variant="ghost" size="sm" className="flex-1 text-gray-600 hover:text-red-600 hover:bg-red-50 py-1">
+                    <Heart className="h-4 w-4 mr-1" /> Like
+                  </Button>
+                  <Button variant="ghost" size="sm" className="flex-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 py-1">
+                    <MessageSquare className="h-4 w-4 mr-1" /> Comment
+                  </Button>
+                  <Button variant="ghost" size="sm" className="flex-1 text-gray-600 hover:text-green-600 hover:bg-green-50 py-1">
+                    <Share2 className="h-4 w-4 mr-1" /> Share
+                  </Button>
+                  <Button variant="ghost" size="sm" className="flex-1 text-gray-600 hover:text-yellow-600 hover:bg-yellow-50 py-1">
+                    <Bookmark className="h-4 w-4 mr-1" /> Save
                   </Button>
                 </div>
               </div>
+            ))}
+          </div>
+        </main>
+
+        {/* Right Sidebar */}
+        <aside
+          className="w-72 flex-shrink-0 bg-white border-l border-gray-200 p-4"
+          style={{ position: "sticky", top: "4rem", alignSelf: "flex-start", height: "fit-content" }}
+        >
+          <div className="flex flex-col gap-4">
+            {/* Journal Club */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-semibold text-sm text-gray-900">Journal Club</h3>
+                <Link to="#" className="text-xs text-blue-600 hover:underline">See all</Link>
+              </div>
+              {rightSidebar[0].items.map((item, idx) => (
+                <div key={idx} className="mb-3 pb-3 border-b border-gray-100">
+                  <h4 className="font-medium text-xs text-gray-900 mb-1">{item.title}</h4>
+                  <p className="text-xs text-gray-600 mb-1">{item.desc}</p>
+                  <p className="text-xs text-gray-500 mb-2">{item.doctors} doctors discussing</p>
+                  <div className="flex items-center gap-2">
+                    <Button size="xs" variant="outline" className="h-6 text-xs font-medium border-blue-200 text-blue-600 hover:bg-blue-50 px-2 py-0">
+                      Join Discussion
+                    </Button>
+                    <span className="text-xs text-gray-500">{item.time}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Featured Conferences */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-semibold text-sm text-gray-900">Featured Conferences</h3>
+                <Link to="#" className="text-xs text-blue-600 hover:underline">More</Link>
+              </div>
+              {rightSidebar[1].items.map((item, idx) => (
+                <div key={idx} className="mb-3 pb-3 border-b border-gray-100">
+                  <h4 className="font-medium text-xs text-gray-900 mb-1">{item.title}</h4>
+                  <p className="text-xs text-gray-600 mb-1">{item.date}</p>
+                  <div className="flex gap-2 mb-2">
+                    <span className="text-xs bg-green-50 border border-green-200 text-green-700 rounded px-2">{item.mode}</span>
+                    <span className="text-xs bg-blue-50 border border-blue-200 text-blue-700 rounded px-2">CME: {item.cme}</span>
+                  </div>
+                  <Button size="xs" className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm">
+                    Register Now
+                  </Button>
+                </div>
+              ))}
+            </div>
+            {/* Upcoming Events */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-semibold text-sm text-gray-900">Upcoming Events</h3>
+                <Link to="#" className="text-xs text-blue-600 hover:underline">See all</Link>
+              </div>
+              {rightSidebar[2].items.map((event, idx) => (
+                <div key={idx} className="flex gap-2 mb-3">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-2 text-center min-w-10 shadow-sm border border-blue-200">
+                    <span className="block text-xs text-blue-600 font-medium">{event.month}</span>
+                    <span className="block text-sm font-bold text-blue-700">{event.day}</span>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-xs text-gray-900 mb-1">{event.title}</h4>
+                    <p className="text-xs text-gray-600 mb-1">{event.time}</p>
+                    <p className="text-xs text-gray-500">{event.location}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </aside>
-      </main>
+      </div>
     </div>
   );
-};
-
-export default HomeFeed;
+}
