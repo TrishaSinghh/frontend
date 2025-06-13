@@ -212,7 +212,7 @@ const Signup = () => {
                   className="text-gray-500 hover:text-gray-700"
                   disabled={isLoading}
                 >
-                  â† Back
+                  ← Back
                 </Button>
                 <div className="flex items-center gap-2">
                   {userType === "doctor" ? (
@@ -242,11 +242,11 @@ const Signup = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" name="firstName" placeholder="John" required disabled={isLoading} />
+                      <Input id="firstName" name="firstName" placeholder="Dr. Anil" required disabled={isLoading} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" name="lastName" placeholder="Doe" required disabled={isLoading} />
+                      <Input id="lastName" name="lastName" placeholder="Kumar" required disabled={isLoading} />
                     </div>
                   </div>
 
@@ -264,7 +264,7 @@ const Signup = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" name="password" type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required disabled={isLoading} />
+                    <Input id="password" name="password" type="password" placeholder="••••••••" required disabled={isLoading} />
                   </div>
 
                   <div className="space-y-2">
@@ -350,7 +350,7 @@ const Signup = () => {
                         Forgot password?
                       </Link>
                     </div>
-                    <Input id="login-password" name="password" type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required disabled={isLoading} />
+                    <Input id="login-password" name="password" type="password" placeholder="••••••••" required disabled={isLoading} />
                   </div>
 
                   <div className="flex items-center space-x-2">

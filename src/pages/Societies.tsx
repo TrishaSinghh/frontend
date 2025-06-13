@@ -122,7 +122,7 @@ const Societies = () => {
             <Button className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3">
               Browse Societies
             </Button>
-            <Button variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3">
+            <Button variant="outline" className="border-blue text-blue hover:bg-white hover:text-blue-600 px-8 py-3">
               Create Society
             </Button>
           </div>

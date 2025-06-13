@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Briefcase, GraduationCap, Search, Building, Hospital } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import Navbar from "@/components/Navbar";
+import Navbar from "@/components/LandingNavbar";
 import Footer from "@/components/Footer";
 
 const healthcareJobs = [

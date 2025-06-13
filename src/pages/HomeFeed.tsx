@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Home, BookOpen, MessageCircle, FileText, Bell, Network,
   Filter, Image, FileIcon, Link2, MoreVertical, Heart,
@@ -7,12 +7,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { BiLogOut } from 'react-icons/bi';
 
 // Mock user and post data
 const user = {
   firstName: "John",
   lastName: "Doe",
-  profilePicture: "/pp.png", // Updated to use pp.png
+  profilePicture: "/pp.png",
   specialization: "Cardiology",
   location: "Boston, MA"
 };
@@ -103,6 +104,12 @@ const rightSidebar = [
 
 export default function HomeFeed() {
   const [liked, setLiked] = useState({});
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.clear(); // or localStorage.removeItem('token');
+    navigate("/signup");
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -113,48 +120,41 @@ export default function HomeFeed() {
 
       {/* Fixed Left Sidebar */}
       <aside
-        className="fixed top-16 left-0 w-56 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 flex flex-col p-4 z-40 overflow-y-auto"
+        className="fixed top-12 left-0 w-56 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 flex flex-col p-4 z-40 overflow-y-auto"
         style={{ minHeight: 0 }}
       >
         {/* Updated Profile Card - LinkedIn Style */}
         <div className="relative w-full bg-white rounded-xl shadow border border-gray-100 overflow-visible mb-6">
-  {/* Banner/Header */}
-  <div className="w-full h-28 bg-gray-200 rounded-t-xl overflow-hidden">
-    <img
-      src="/banner.png"
-      alt="Profile Banner"
-      className="w-full h-full object-cover"
-      style={{ objectPosition: "center" }}
-    />
-  </div>
-  {/* Profile Picture: Overlapping the banner, LinkedIn style */}
-  <div
-    className="absolute left-1/2"
-    style={{
-      transform: "translate(-50%, -50%)",
-      top: "112px", // h-28 = 112px, so this puts center of image at bottom of banner
-      zIndex: 10
-    }}
-  >
-    <img
-      src="/pp.png"
-      alt="Profile"
-      className="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
-    />
-  </div>
-  {/* Profile Info */}
-  <div className="pt-14 pb-4 flex flex-col items-center">
-    <h2 className="text-lg font-bold text-gray-900">
-      John Doe
-    </h2>
-    <div className="text-blue-700 text-sm font-medium mt-1">
-      Cardiology
-    </div>
-    <div className="text-gray-500 text-sm">
-      Boston, MA
-    </div>
-  </div>
-</div>
+          {/* Banner/Header */}
+          <div className="w-full h-20 bg-gray-200 rounded-t-xl overflow-hidden">
+            <img
+              src="/banner.png"
+              alt="Profile Banner"
+              className="w-full h-full object-cover"
+              style={{ objectPosition: "center" }}
+            />
+          </div>
+          {/* Profile Picture: Overlapping the banner, LinkedIn style */}
+          <div
+            className="absolute left-1/2"
+            style={{
+              transform: "translate(-50%, -50%)",
+              top: "90px",
+              zIndex: 10
+            }}
+          >
+            <img
+              src="/pp.png"
+              alt="Profile"
+              className="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
+            />
+          </div>
+          {/* Profile Info */}
+          <div className="pt-14 pb-4 flex flex-col items-center">
+            <h2 className="text-lg font-bold text-gray-900">Dr John Doe</h2>
+            <div className="text-blue-700 text-sm font-medium mt-1">Cardiology</div>
+          </div>
+        </div>
 
         {/* Navigation */}
         <nav className="mt-2 space-y-0">
@@ -176,6 +176,16 @@ export default function HomeFeed() {
             </Link>
           ))}
         </nav>
+        {/* Logout Button */}
+        <div className="mt-auto pt-4 border-t border-gray-100">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-red-50 text-sm text-red-600 w-full"
+          >
+            <BiLogOut />
+            <span>Logout</span>
+          </button>
+        </div>
       </aside>
 
       {/* Main Content and Right Sidebar */}
@@ -287,7 +297,7 @@ export default function HomeFeed() {
         {/* Right Sidebar */}
         <aside
           className="w-72 flex-shrink-0 bg-white border-l border-gray-200 p-4"
-          style={{ position: "sticky", top: "4rem", alignSelf: "flex-start", height: "fit-content" }}
+          style={{ position: "sticky", top: "1.8rem", alignSelf: "flex-start", height: "fit-content" }}
         >
           <div className="flex flex-col gap-4">
             {/* Journal Club */}

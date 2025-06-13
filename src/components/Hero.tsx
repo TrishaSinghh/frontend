@@ -55,11 +55,21 @@ const Hero = () => {
               Join a trusted network of healthcare professionals advancing care through collaboration.
             </motion.p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <motion.div whileHover={{ scale: 1.05, boxShadow: "0 0 16px #3B82F6" }}>
-                <Button size="lg" className="bg-[#3B82F6] hover:bg-[#3B82F6]/90 shadow-lg">
-                  Join The Waitlist
-                </Button>
-              </motion.div>
+              <motion.div
+  whileHover={{ scale: 1.05, boxShadow: "0 0 16px #3B82F6" }}
+  onClick={() =>
+    window.open(
+      "https://docs.google.com/forms/d/e/1FAIpQLSdXDIwqebo7ClSm04_1UWdJhAfLxI_PO7XtGxrf2HhmhgU-Nw/viewform?usp=dialog",
+      "_blank"
+    )
+  }
+  className="cursor-pointer"
+>
+  <Button size="lg" className="bg-[#3B82F6] hover:bg-[#3B82F6]/90 shadow-lg">
+    Join The Waitlist
+  </Button>
+</motion.div>
+
               <motion.div whileHover={{ scale: 1.05, boxShadow: "0 0 16px #3B82F6" }}>
                 <Button size="lg" variant="outline" className="border-[#3B82F6] text-[#3B82F6] hover:bg-[#3B82F6]/5 shadow">
                   See How It Works
