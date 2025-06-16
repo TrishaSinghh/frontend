@@ -12,6 +12,19 @@ class ApiClient {
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
   }
+  /**
+ * Make a PATCH request
+ */
+public async patch<T>(endpoint: string, data?: any, includeAuth: boolean = true): Promise<T> {
+  const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    method: 'PATCH',
+    headers: this.getHeaders(includeAuth),
+    body: data ? JSON.stringify(data) : undefined,
+    mode: 'cors',
+  });
+  return this.handleResponse<T>(response);
+}
+
 
   /**
    * Get the stored JWT token
@@ -138,5 +151,8 @@ class ApiClient {
     return this.handleResponse<T>(response);
   }
 }
+export const authApiClient = new ApiClient('https://auth.api.pharminc.in');
+export const userApiClient = new ApiClient('https://user.api.pharminc.in');
+export const instituteApiClient = new ApiClient('https://institute.api.pharminc.in');
 
 export const apiClient = new ApiClient();

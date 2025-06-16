@@ -32,6 +32,7 @@ const Signup = () => {
 
       if (response.token) {
         tokenStorage.setToken(response.token);
+        tokenStorage.setUser({ userId: response.userId });
 
         toast({
           title: "Login successful",

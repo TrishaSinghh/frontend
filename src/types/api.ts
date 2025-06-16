@@ -216,6 +216,35 @@ export interface UpdateUserTagRequest {
   userId?: string;
   tagId?: string;
 }
+export interface Connection {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  status: 'pending' | 'accepted';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateConnectionRequest {
+  receiverId: string; // The user to whom the connection is sent
+}
+
+export interface AcceptConnectionRequest {
+  connectionId: string;
+}
+
+// Follow types
+export interface Follow {
+  id: string;
+  followerId: string;
+  followingId: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateFollowRequest {
+  followingId: string; // The user to follow
+}
 
 // API Error type
 export interface ApiError {
