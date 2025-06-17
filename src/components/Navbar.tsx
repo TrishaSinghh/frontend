@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Briefcase, Home, Users, MessageSquare, Bell } from "lucide-react";
+import { Search, Briefcase, Home, Users } from "lucide-react";
 import { userService } from "@/services/userService";
+import { User } from "@/types/api"; // Import your User type
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState<User[]>([]); // Explicit type
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
 
-  const handleSearch = async (e) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Only name is required now
     if (!searchTerm.trim()) {
       setResults([]);
       setShowDropdown(false);
@@ -25,26 +24,23 @@ const Navbar = () => {
     setLoading(true);
     setShowDropdown(true);
     try {
-      // If your service method still takes all params, just pass name and empty strings for the rest
       const response = await userService.searchUsers(
-        searchTerm, // name (required)
-        searchTerm, // q (optional)
-        "",         // location (optional)
-        ""          // role (optional)
+        searchTerm, // q (required)
+        searchTerm, // name (optional)
+        undefined,  // location
+        undefined   // role
       );
-      // If your API returns { data: [...] }, adjust accordingly:
-      setResults(response || response || []);
+      setResults(response?.data || []); // Optional chaining
     } catch (error) {
       setResults([]);
     }
     setLoading(false);
   };
 
-  const handleProfileClick = (userId) => {
+  const handleProfileClick = (userId: string) => {
     setShowDropdown(false);
     navigate(`/profile/${userId}`);
   };
-
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
