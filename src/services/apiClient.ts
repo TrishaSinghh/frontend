@@ -154,5 +154,7 @@ public async patch<T>(endpoint: string, data?: any, includeAuth: boolean = true)
 export const authApiClient = new ApiClient('https://auth.api.pharminc.in');
 export const userApiClient = new ApiClient('https://user.api.pharminc.in');
 export const instituteApiClient = new ApiClient('https://institute.api.pharminc.in');
+export const jobApiClient = new ApiClient('https://jobapi.pharminc.in');
+
 
 export const apiClient = new ApiClient();

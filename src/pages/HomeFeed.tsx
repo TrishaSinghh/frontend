@@ -340,7 +340,7 @@ avatar: userInfo && userInfo.user && userInfo.user.profilePicture ? userInfo.use
             { name: "Home", icon: <Home className="h-4 w-4" />, path: "/" },
             { name: "Explore", icon: <Search className="h-4 w-4" />, path: "/profile" },
             { name: "Messages", icon: <MessageCircle className="h-4 w-4" />, path: "/messages" },
-            { name: "Research", icon: <FileText className="h-4 w-4" />, path: "/research" },
+            { name: "Jobs", icon: <FileText className="h-4 w-4" />, path: "/jobs" },
             { name: "Notifications", icon: <Bell className="h-4 w-4" />, path: "/notifications" },
             { name: "Societies", icon: <Network className="h-4 w-4" />, path: "/societies" },
           ].map(item => (

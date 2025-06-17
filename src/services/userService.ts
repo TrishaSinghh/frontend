@@ -32,10 +32,21 @@ export class UserService {
     return userApiClient.get<User[]>('/public/users', false);
   }
 
-  // Search public users (add query params as needed)
-  async searchUsers(query: string): Promise<User[]> {
-    return userApiClient.get<User[]>(`/public/users/search?query=${encodeURIComponent(query)}`, false);
-  }
+  // Search public users (all params required as strings)
+  async searchUsers(
+  name: string,
+  q: string,
+  location: string,
+  role: string
+): Promise<User[]> {
+  const params = new URLSearchParams({
+    name: name ?? "",
+    q: q ?? "",
+    location: location ?? "",
+    role: role ?? ""
+  }).toString();
+  return userApiClient.get<User[]>(`/public/users/search?${params}`, false);
+}
 }
 
 export const userService = new UserService();
