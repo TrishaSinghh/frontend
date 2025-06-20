@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
-import { userService } from "@/services/userService";
+import { userService, institutionService, userEducationService, userExperienceService } from "@/services";
 import { tokenStorage } from "@/utils/tokenStorage";
-import { apiClient } from "@/services/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { User, MapPin, Camera } from "lucide-react";
 
@@ -98,91 +97,55 @@ const Onboarding = () => {
     try {
       if (!userId) throw new Error("No user ID found");
 
-     let createdInstitutionId = institutionId;
+      let createdInstitutionId = institutionId;
 
-// 1. Create institution if needed
-if (!createdInstitutionId) {
-  const institutionRes = await apiClient.post("/institution", {
-    name: institutionName,
-    about: institutionAbout,
-    location: institutionLocation,
-  }) as { institutionId: string }; 
+      // 1. Create institution if needed
+      if (!createdInstitutionId) {
+        const institutionRes = await institutionService.createInstitution({
+          name: institutionName,
+          type: "institution",
+          location: institutionLocation,
+        });
+        if (!institutionRes.id) {
+          throw new Error("Institution creation failed: No ID returned.");
+        }
+        createdInstitutionId = institutionRes.id;
+        setInstitutionId(createdInstitutionId);
+      }
 
-  if (!institutionRes.institutionId) {
-    throw new Error("Institution creation failed: No ID returned.");
-  }
+      // 2. POST education (now institutionId is guaranteed)
+      await userEducationService.createUserEducation({
+        title: eduTitle,
+        description: eduDescription,
+        startDate: new Date(eduStartDate).toISOString(),
+        endDate: new Date(eduEndDate).toISOString(),
+        institutionId: createdInstitutionId,
+      });
 
-  createdInstitutionId = institutionRes.institutionId;
-  setInstitutionId(createdInstitutionId);
-}
+      // 3. POST experience
+      await userExperienceService.createUserExperience({
+        title: expTitle,
+        description: expDescription,
+        startDate: new Date(expStartDate).toISOString(),
+        endDate: new Date(expEndDate).toISOString(),
+        institutionId: createdInstitutionId,
+      });
 
-// Always log before sending!
-console.log("EDU POST", {
-  title: eduTitle,
-  description: eduDescription,
-  startDate: new Date(eduStartDate).toISOString(),
-  endDate: new Date(eduEndDate).toISOString(),
-  institutionId: createdInstitutionId,
-});
-
-// 2. POST education (now institutionId is guaranteed)
-await apiClient.post("/user/education", {
-  title: eduTitle,
-  description: eduDescription,
-  startDate: new Date(eduStartDate).toISOString(),
-  endDate: new Date(eduEndDate).toISOString(),
-  institutionId: createdInstitutionId,
-});
-
-// 3. POST experience
-await apiClient.post("/user/experience", {
-  title: expTitle,
-  description: expDescription,
-  startDate: new Date(expStartDate).toISOString(),
-  endDate: new Date(expEndDate).toISOString(),
-  institutionId: createdInstitutionId,
-});
-
-
-      // 4. Update user profile
-      const profileData: any = {
+      // 4. Update user profile (local storage only, as your logic)
+      const existingUser = tokenStorage.getUser() || {};
+      const updatedUser = {
+        ...existingUser,
         about,
         location,
         interests,
+        profilePicture: profilePicture || existingUser.profilePicture,
+        userId: existingUser.userId || profile?.userId,
+        firstName: existingUser.firstName || profile?.firstName,
+        lastName: existingUser.lastName || profile?.lastName,
+        email: existingUser.email || profile?.email,
+        specialization: existingUser.specialization || profile?.specialization,
       };
-      if (profilePicture) profileData.profilePicture = profilePicture;
-      if (profile) {
-        profileData.firstName = profile.firstName;
-        profileData.lastName = profile.lastName;
-        profileData.specialization = profile.specialization;
-      }
-      try {
-  // 1. Check if user exists
-  await userService.getUserById(userId);
-  // (Optional) Show success message here
-} catch (error) {
-  console.error('User does not exist or update failed:', error);
-  // (Optional) Show error message to user here
-}
-
-
-      // Update local storage
-      // After updating profile data, merge it with the existing user
-const existingUser = tokenStorage.getUser() || {};
-const updatedUser = {
-  ...existingUser,
-  about,
-  location,
-  interests,
-  profilePicture: profilePicture || existingUser.profilePicture,
-  // Preserve other critical fields
-  userId: existingUser.userId || profile?.userId,
-  firstName: existingUser.firstName || profile?.firstName,
-  lastName: existingUser.lastName || profile?.lastName,
-  email: existingUser.email || profile?.email,
-  specialization: existingUser.specialization || profile?.specialization,
-};
-tokenStorage.setUser(updatedUser);
+      tokenStorage.setUser(updatedUser);
 
       toast({
         title: "Profile updated successfully!",

@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 import { authService, SignupRequest } from "@/services/authService";
 import { tokenStorage } from "@/utils/tokenStorage";
 import { useToast } from "@/hooks/use-toast";
-import { apiClient } from '../services/apiClient';
+import { userApiClient } from "@/services/apiClient";
 
 const Signup = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -77,6 +77,7 @@ const Signup = () => {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const specialty = formData.get("specialty") as string;
+    const location = formData.get("location") as string || "";
 
     try {
       const signupData: SignupRequest = {
@@ -90,30 +91,29 @@ const Signup = () => {
 
       // 1. Register user (auth)
       await authService.signup(signupData);
-
+      
       // 2. Immediately log in to get JWT token
-      const loginResponse = await authService.login({ email, password });
+      const loginResponse = await authService.login({ email, password, type: userType });
       if (!loginResponse.token) {
         throw new Error("Login failed after signup. Please try logging in manually.");
       }
       tokenStorage.setToken(loginResponse.token);
+      // Set token for userApiClient
+      userApiClient.setToken(loginResponse.token);
 
-      // 3. Now create the user profile (with JWT token set)
-      await apiClient.post('/user', {
-        firstName,
-        lastName,
-        specialization: specialty
-      });
+// 3. Now create the user profile (with JWT token set)
+const profileResponse = await userApiClient.post(
+  '/private/user',
+  {
+    name: `${firstName} ${lastName}`.trim(),
+    location: location, // Always a string (empty if user left it blank)
+    role: userType,
+  },
+  true // includeAuth (use true to send the token)
+);
 
-      // 4. Store user info with userId for onboarding
-      tokenStorage.setUser({
-        userId: loginResponse.userId,
-        firstName,
-        lastName,
-        email,
-        specialty,
-        userType
-      });
+// 4. Store backend response in tokenStorage
+tokenStorage.setUser(profileResponse);
 
       toast({
         title: "Account created successfully",
@@ -136,7 +136,6 @@ const Signup = () => {
           errorMessage = error.message;
         }
       }
-
       toast({
         title: "Signup failed",
         description: errorMessage,
@@ -266,6 +265,18 @@ const Signup = () => {
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
                     <Input id="password" name="password" type="password" placeholder="••••••••" required disabled={isLoading} />
+                  </div>
+
+                  {/* Collect location from user */}
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location</Label>
+                    <Input
+                      id="location"
+                      name="location"
+                      placeholder="City, Country"
+                      required
+                      disabled={isLoading}
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -400,7 +411,6 @@ const Signup = () => {
                   <span className="px-2 bg-white text-gray-500">Or continue with</span>
                 </div>
               </div>
-
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <Button variant="outline" type="button" className="w-full">
                   {/* Google SVG */}

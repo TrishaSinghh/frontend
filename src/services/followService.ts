@@ -1,4 +1,4 @@
-import { apiClient } from './apiClient';
+import { networkApiClient } from './apiClient';
 import { Follow, CreateFollowRequest, ApiError } from '../types/api';
 
 /**
@@ -12,26 +12,38 @@ export class FollowService {
    * @throws ApiError if creation fails
    */
   async followUser(followData: CreateFollowRequest): Promise<Follow> {
-    return apiClient.post<Follow>('/follow', followData);
+    return networkApiClient.post<Follow>('/private/follow', followData);
   }
 
   /**
-   * Unfollow a user by ID
+   * Unfollow a user by follow relationship ID
    * @param id - Follow relationship ID
    * @returns Promise that resolves when unfollow is successful
    * @throws ApiError if deletion fails
    */
   async unfollowUser(id: string): Promise<void> {
-    await apiClient.delete<void>(`/follow/${id}`);
+    // The DELETE endpoint is /private/follow, so send the ID as a query param
+    await networkApiClient.delete<void>(`/private/follow?id=${encodeURIComponent(id)}`);
   }
 
   /**
-   * Get all follow relationships
-   * @returns Promise containing list of follow relationships
+   * Get all followers for a user
+   * @param userId - User ID
+   * @returns Promise containing list of followers
    * @throws ApiError if request fails
    */
-  async getFollows(): Promise<Follow[]> {
-    return apiClient.get<Follow[]>('/follow');
+  async getFollowers(userId: string): Promise<Follow[]> {
+    return networkApiClient.get<Follow[]>(`/public/follow/${userId}/followers`);
+  }
+
+  /**
+   * Get all connections (followers/connections) for a user
+   * @param userId - User ID
+   * @returns Promise containing list of follower connections
+   * @throws ApiError if request fails
+   */
+  async getConnections(userId: string): Promise<Follow[]> {
+    return networkApiClient.get<Follow[]>(`/public/follow/${userId}/followers/c`);
   }
 }
 

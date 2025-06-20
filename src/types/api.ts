@@ -2,9 +2,10 @@
 export interface LoginRequest {
   email: string;
   password: string;
+  type?: string;
 }
 
-export interface Login2Response {
+export interface LoginResponse {
   token: string;
   userId: string;
 }
@@ -12,6 +13,7 @@ export interface Login2Response {
 export interface RegisterRequest {
   email: string;
   password: string;
+  type?: string;
 }
 
 // User types
@@ -100,7 +102,7 @@ export interface UpdateCommentRequest {
 // Institution types
 export interface CreateInstitutionRequest {
   name: string;
-  about: string;
+  type: string;
   location: string;
 }
 
@@ -128,7 +130,7 @@ export interface CreateUserEducationRequest {
   institutionId: string;
 }
 
-export interface User2Education {
+export interface UserEducation {
   id: string;
   title: string;
   description: string;
@@ -157,7 +159,7 @@ export interface CreateUserExperienceRequest {
   institutionId: string;
 }
 
-export interface User2Experience {
+export interface UserExperience {
   id: string;
   title: string;
   description: string;

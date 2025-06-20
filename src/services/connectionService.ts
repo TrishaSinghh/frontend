@@ -1,4 +1,4 @@
-import { apiClient } from './apiClient';
+import { networkApiClient } from './apiClient';
 import {
   Connection,
   CreateConnectionRequest,
@@ -17,45 +17,48 @@ export class ConnectionService {
    * @throws ApiError if creation fails
    */
   async createConnection(connectionData: CreateConnectionRequest): Promise<Connection> {
-    return apiClient.post<Connection>('/connection', connectionData);
-  }
-
-  /**
-   * Get all connections
-   * @returns Promise containing list of connections
-   * @throws ApiError if request fails
-   */
-  async getConnections(): Promise<Connection[]> {
-    return apiClient.get<Connection[]>('/connection');
+    return networkApiClient.post<Connection>('/private/connect', connectionData);
   }
 
   /**
    * Delete a connection by ID
-   * @param id - Connection ID
+   * @param connectionId - Connection ID
    * @returns Promise that resolves when deletion is successful
    * @throws ApiError if deletion fails
    */
-  async deleteConnection(id: string): Promise<void> {
-    await apiClient.delete<void>(`/connection/${id}`);
+  async deleteConnection(connectionId: string): Promise<void> {
+    // Usually, DELETE expects an identifier in the body or as a query param.
+    await networkApiClient.delete<void>(`/private/connect?id=${encodeURIComponent(connectionId)}`);
   }
 
   /**
-   * Accept a connection request by ID
-   * @param id - Connection ID
+   * Accept a connection request
+   * @param data - AcceptConnectionRequest (should contain connectionId)
    * @returns Promise containing the updated connection
    * @throws ApiError if update fails
    */
-  async acceptConnection(id: string): Promise<Connection> {
-    return apiClient.patch<Connection>(`/connection/${id}/accept`);
+  async acceptConnection(data: AcceptConnectionRequest): Promise<Connection> {
+    return networkApiClient.put<Connection>('/private/connect/accept', data);
   }
 
   /**
-   * Get all accepted connections
+   * Get all connections for a user
+   * @param userId - User ID
+   * @returns Promise containing list of connections
+   * @throws ApiError if request fails
+   */
+  async getConnectionsByUser(userId: string): Promise<Connection[]> {
+    return networkApiClient.get<Connection[]>(`/public/connect/${userId}/connects`);
+  }
+
+  /**
+   * Get all accepted connections for a user
+   * @param userId - User ID
    * @returns Promise containing list of accepted connections
    * @throws ApiError if request fails
    */
-  async getAcceptedConnections(): Promise<Connection[]> {
-    return apiClient.get<Connection[]>('/connection/accepted');
+  async getAcceptedConnectionsByUser(userId: string): Promise<Connection[]> {
+    return networkApiClient.get<Connection[]>(`/public/connect/${userId}/connects/accepted`);
   }
 }
 

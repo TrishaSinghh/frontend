@@ -113,7 +113,7 @@ export default function HomeFeed() {
     if (!userId) return;
 
     setLoading(true);
-    fetch(`https://api.pharminc.in/user/${userId}`, {
+    fetch(`https://user.api.pharminc.in/public/user/${userId}`, { // UPDATED ENDPOINT
       headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
     })
       .then(res => res.ok ? res.json() : Promise.reject('Could not load user'))
@@ -130,7 +130,7 @@ export default function HomeFeed() {
 
   // Fetch posts from backend, sorted by createdAt (newest first)
   useEffect(() => {
-    fetch(`https://api.pharminc.in/public/post`, {
+    fetch(`https://content.api.pharminc.in/public/post`, { // UPDATED ENDPOINT
       headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
     })
       .then(res => res.ok ? res.json() : Promise.reject('Could not load posts'))
@@ -161,7 +161,7 @@ export default function HomeFeed() {
   const fetchUserInfo = async (userId) => {
     if (userCache[userId]) return userCache[userId];
     try {
-      const res = await fetch(`https://api.pharminc.in/user/${userId}`, {
+      const res = await fetch(`https://user.api.pharminc.in/public/user/${userId}`, { // UPDATED ENDPOINT
         headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
       });
       if (!res.ok) throw new Error('Could not load user');
@@ -189,7 +189,7 @@ export default function HomeFeed() {
     if (!userId || !postContent) return;
 
     setPosting(true);
-    fetch(`https://api.pharminc.in/post`, {
+    fetch(`https://content.api.pharminc.in/private/post`, { // UPDATED ENDPOINT
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -202,7 +202,7 @@ export default function HomeFeed() {
     })
       .then(res => res.ok ? res.json() : Promise.reject('Failed to create post'))
       .then(newPostId => {
-        fetch(`https://api.pharminc.in/public/post`, {
+        fetch(`https://content.api.pharminc.in/public/post`, { // UPDATED ENDPOINT
           headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
         })
           .then(res => res.ok ? res.json() : Promise.reject('Could not refresh posts'))
@@ -239,8 +239,6 @@ export default function HomeFeed() {
 
   const user = userData?.user || userData;
   const displayPosts = posts.length > 0 ? posts : mockPosts;
-
-  // Use state to store mapped posts for rendering
   const [mappedDisplayPosts, setMappedDisplayPosts] = useState([]);
   useEffect(() => {
     const mapAllPosts = async () => {
@@ -254,9 +252,8 @@ export default function HomeFeed() {
           return {
             ...post,
             author: userInfo && userInfo.user ? `Dr ${userInfo.user.firstName} ${userInfo.user.lastName}` : `User ${post.userId}`,
-role: userInfo && userInfo.user ? userInfo.user.specialization : "User",
-avatar: userInfo && userInfo.user && userInfo.user.profilePicture ? userInfo.user.profilePicture : "/pp.png",
-
+            role: userInfo && userInfo.user ? userInfo.user.specialization : "User",
+            avatar: userInfo && userInfo.user && userInfo.user.profilePicture ? userInfo.user.profilePicture : "/pp.png",
             time: post.createdAt ? new Date(post.createdAt).toLocaleString() : post.time,
             tags: post.tags || [],
             type: post.type || "Post",
@@ -264,7 +261,7 @@ avatar: userInfo && userInfo.user && userInfo.user.profilePicture ? userInfo.use
             comments: post.comments || 0,
             shares: post.shares || 0,
             saves: post.saves || 0,
-            image: post.imageId ? `https://api.pharminc.in/image/${post.imageId}` : post.image
+            image: post.imageId ? `https://content.api.pharminc.in/image/${post.imageId}` : post.image // UPDATED ENDPOINT
           };
         })
       );
@@ -365,7 +362,6 @@ avatar: userInfo && userInfo.user && userInfo.user.profilePicture ? userInfo.use
           </button>
         </div>
       </aside>
-
       {/* Main Content and Right Sidebar */}
       <div
         className="flex flex-row"
@@ -379,7 +375,7 @@ avatar: userInfo && userInfo.user && userInfo.user.profilePicture ? userInfo.use
           {/* Your Feed and Filter */}
           <div className="bg-white rounded-xl shadow border border-gray-100 w-full max-w-2xl mt-6 px-6 py-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Your Feed</h2>
+              <h2 className="text-xl font2-semibold">Your Feed</h2>
               <Button variant="ghost" size="sm">
                 <Filter className="h-4 w-4 mr-2" />
                 Filter
@@ -490,7 +486,6 @@ avatar: userInfo && userInfo.user && userInfo.user.profilePicture ? userInfo.use
             ))}
           </div>
         </main>
-
         {/* Right Sidebar */}
         <aside
           className="w-72 flex-shrink-0 bg-white border-l border-gray-200 p-4"
