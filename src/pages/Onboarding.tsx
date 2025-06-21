@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 import { userService, institutionService, userEducationService, userExperienceService } from "@/services";
@@ -75,7 +75,6 @@ const Onboarding = () => {
         });
       })
       .finally(() => setIsLoading(false));
-    // eslint-disable-next-line
   }, [userId]);
 
   // Handle file input change (convert to base64 string for demo, or upload to server if you have an endpoint)
@@ -99,8 +98,8 @@ const Onboarding = () => {
 
       let createdInstitutionId = institutionId;
 
-      // 1. Create institution if needed
-      if (!createdInstitutionId) {
+      // 1. Create institution if needed (only if user entered something)
+      if (!createdInstitutionId && institutionName) {
         const institutionRes = await institutionService.createInstitution({
           name: institutionName,
           type: "institution",
@@ -113,23 +112,27 @@ const Onboarding = () => {
         setInstitutionId(createdInstitutionId);
       }
 
-      // 2. POST education (now institutionId is guaranteed)
-      await userEducationService.createUserEducation({
-        title: eduTitle,
-        description: eduDescription,
-        startDate: new Date(eduStartDate).toISOString(),
-        endDate: new Date(eduEndDate).toISOString(),
-        institutionId: createdInstitutionId,
-      });
+      // 2. POST education (only if user entered something)
+      if (eduTitle || eduDescription || eduStartDate || eduEndDate) {
+        await userEducationService.createUserEducation({
+          title: eduTitle,
+          description: eduDescription,
+          startDate: eduStartDate ? new Date(eduStartDate).toISOString() : undefined,
+          endDate: eduEndDate ? new Date(eduEndDate).toISOString() : undefined,
+          institutionId: createdInstitutionId,
+        });
+      }
 
-      // 3. POST experience
-      await userExperienceService.createUserExperience({
-        title: expTitle,
-        description: expDescription,
-        startDate: new Date(expStartDate).toISOString(),
-        endDate: new Date(expEndDate).toISOString(),
-        institutionId: createdInstitutionId,
-      });
+      // 3. POST experience (only if user entered something)
+      if (expTitle || expDescription || expStartDate || expEndDate) {
+        await userExperienceService.createUserExperience({
+          title: expTitle,
+          description: expDescription,
+          startDate: expStartDate ? new Date(expStartDate).toISOString() : undefined,
+          endDate: expEndDate ? new Date(expEndDate).toISOString() : undefined,
+          institutionId: createdInstitutionId,
+        });
+      }
 
       // 4. Update user profile (local storage only, as your logic)
       const existingUser = tokenStorage.getUser() || {};
@@ -149,7 +152,7 @@ const Onboarding = () => {
 
       toast({
         title: "Profile updated successfully!",
-        description: "Your institution, education, and experience have been added.",
+        description: "You have completed onboarding. You can now proceed.",
       });
 
       navigate("/profile");
@@ -207,7 +210,7 @@ const Onboarding = () => {
           <div className="space-y-2">
             <Label htmlFor="profilePicture" className="flex items-center gap-2">
               <Camera className="h-4 w-4" />
-              Profile Picture (Optional)
+              Profile Picture
             </Label>
             <div className="flex items-center gap-4">
               <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
@@ -242,7 +245,6 @@ const Onboarding = () => {
               placeholder="Tell us about your professional background, interests, and what you're passionate about..."
               rows={4}
               disabled={isLoading}
-              required
               value={about}
               onChange={e => setAbout(e.target.value)}
             />
@@ -259,7 +261,6 @@ const Onboarding = () => {
               name="location"
               placeholder="City, Country"
               disabled={isLoading}
-              required
               value={location}
               onChange={e => setLocation(e.target.value)}
             />
@@ -273,7 +274,6 @@ const Onboarding = () => {
               name="interests"
               placeholder="e.g., Cardiology research, Medical education, Healthcare technology"
               disabled={isLoading}
-              required
               value={interests}
               onChange={e => setInterests(e.target.value)}
             />
@@ -283,37 +283,37 @@ const Onboarding = () => {
           <div>
             <h2 className="text-xl font-bold mb-2">Institution</h2>
             <Label>Name</Label>
-            <Input value={institutionName} onChange={e => setInstitutionName(e.target.value)} required />
+            <Input value={institutionName} onChange={e => setInstitutionName(e.target.value)} />
             <Label>About</Label>
-            <Textarea value={institutionAbout} onChange={e => setInstitutionAbout(e.target.value)} required />
+            <Textarea value={institutionAbout} onChange={e => setInstitutionAbout(e.target.value)} />
             <Label>Location</Label>
-            <Input value={institutionLocation} onChange={e => setInstitutionLocation(e.target.value)} required />
+            <Input value={institutionLocation} onChange={e => setInstitutionLocation(e.target.value)} />
           </div>
 
           {/* Education Section */}
           <div>
             <h2 className="text-xl font-bold mb-2">Education</h2>
             <Label>Title</Label>
-            <Input value={eduTitle} onChange={e => setEduTitle(e.target.value)} required />
+            <Input value={eduTitle} onChange={e => setEduTitle(e.target.value)} />
             <Label>Description</Label>
-            <Textarea value={eduDescription} onChange={e => setEduDescription(e.target.value)} required />
+            <Textarea value={eduDescription} onChange={e => setEduDescription(e.target.value)} />
             <Label>Start Date</Label>
-            <Input type="date" value={eduStartDate} onChange={e => setEduStartDate(e.target.value)} required />
+            <Input type="date" value={eduStartDate} onChange={e => setEduStartDate(e.target.value)} />
             <Label>End Date</Label>
-            <Input type="date" value={eduEndDate} onChange={e => setEduEndDate(e.target.value)} required />
+            <Input type="date" value={eduEndDate} onChange={e => setEduEndDate(e.target.value)} />
           </div>
 
           {/* Experience Section */}
           <div>
             <h2 className="text-xl font-bold mb-2">Experience</h2>
             <Label>Title</Label>
-            <Input value={expTitle} onChange={e => setExpTitle(e.target.value)} required />
+            <Input value={expTitle} onChange={e => setExpTitle(e.target.value)} />
             <Label>Description</Label>
-            <Textarea value={expDescription} onChange={e => setExpDescription(e.target.value)} required />
+            <Textarea value={expDescription} onChange={e => setExpDescription(e.target.value)} />
             <Label>Start Date</Label>
-            <Input type="date" value={expStartDate} onChange={e => setExpStartDate(e.target.value)} required />
+            <Input type="date" value={expStartDate} onChange={e => setExpStartDate(e.target.value)} />
             <Label>End Date</Label>
-            <Input type="date" value={expEndDate} onChange={e => setExpEndDate(e.target.value)} required />
+            <Input type="date" value={expEndDate} onChange={e => setExpEndDate(e.target.value)} />
           </div>
 
           {/* Submit Button */}

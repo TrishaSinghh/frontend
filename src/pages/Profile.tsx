@@ -30,9 +30,7 @@ const Profile = () => {
 
     setLoading(true);
 
-    fetch(`https://api.pharminc.in/user/${userId}`, {
-      headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
-    })
+    fetch(`https://user.api.pharminc.in/public/user/${userId}`)
       .then(res => res.ok ? res.json() : Promise.reject('Could not load user'))
       .then(data => {
         setProfileData(Array.isArray(data) ? data[0] : data);
@@ -87,7 +85,7 @@ const Profile = () => {
     );
   }
 
-  const user = profileData.user;
+  const user = profileData;
   const experience = profileData.experiences;
   const education = profileData.educations;
 
@@ -112,9 +110,9 @@ const Profile = () => {
               </div>
               <CardContent className="pt-12 pb-6 text-center">
                 <h3 className="font-bold text-lg text-gray-900 mb-1">
-                  {user ? `${user.firstName} ${user.lastName}` : "Loading..."}
+                 {user ? user.name : "Loading..."}
                 </h3>
-                <p className="text-sm text-gray-600 mb-4">{user?.specialization || "Specialization not set"}</p>
+                <p className="text-sm text-gray-600 mb-4">{user?.role || "Specialization not set"}</p>
                 <Separator className="my-4" />
                 <div className="space-y-3 text-left text-sm">
                   <div className="flex justify-between items-center">
@@ -232,19 +230,19 @@ const Profile = () => {
               <CardContent className="pt-24 pb-8">
                 <div className="mb-8">
                   <div className="flex items-center gap-3 mb-3">
-                    <h1 className="text-3xl font-bold text-gray-900">{user ? `${user.firstName} ${user.lastName}` : "Loading..."}</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">{user ? user.name : "Loading..."}</h1>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                       <span className="text-sm text-green-600 font-medium">Online</span>
                     </div>
                   </div>
-                  <p className="text-xl text-gray-700 mb-4">{user?.specialization || "Specialization not set"}</p>
+                  <p className="text-xl text-gray-700 mb-4">{user?.role || "Specialization not set"}</p>
                   <div className="flex items-center gap-2 text-gray-600 mb-6">
                     <MapPin className="h-5 w-5 text-blue-500" />
                     <span className="text-base">{user?.location || "Location not set"}</span>
                   </div>
                   <div className="flex flex-wrap gap-2 mb-6">
-                    <Badge variant="outline">{user?.specialization || "Specialization"}</Badge>
+                    <Badge variant="outline">{user?.role || "Specialization"}</Badge>
                     <Badge variant="outline">Pharmacist</Badge>
                     <Badge variant="outline">Researcher</Badge>
                   </div>

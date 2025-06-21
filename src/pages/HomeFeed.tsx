@@ -101,7 +101,9 @@ export default function HomeFeed() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState([]);
+  const [postTitle, setPostTitle] = useState("");
   const [postContent, setPostContent] = useState("");
+  const [postAttachmentId, setPostAttachmentId] = useState("");
   const [posting, setPosting] = useState(false);
   const [userCache, setUserCache] = useState({});
   const navigate = useNavigate();
@@ -113,7 +115,7 @@ export default function HomeFeed() {
     if (!userId) return;
 
     setLoading(true);
-    fetch(`https://user.api.pharminc.in/public/user/${userId}`, { // UPDATED ENDPOINT
+    fetch(`https://user.api.pharminc.in/public/user/${userId}`, {
       headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
     })
       .then(res => res.ok ? res.json() : Promise.reject('Could not load user'))
@@ -130,7 +132,7 @@ export default function HomeFeed() {
 
   // Fetch posts from backend, sorted by createdAt (newest first)
   useEffect(() => {
-    fetch(`https://content.api.pharminc.in/public/post`, { // UPDATED ENDPOINT
+    fetch(`https://content.api.pharminc.in/public/post`, {
       headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
     })
       .then(res => res.ok ? res.json() : Promise.reject('Could not load posts'))
@@ -161,7 +163,7 @@ export default function HomeFeed() {
   const fetchUserInfo = async (userId) => {
     if (userCache[userId]) return userCache[userId];
     try {
-      const res = await fetch(`https://user.api.pharminc.in/public/user/${userId}`, { // UPDATED ENDPOINT
+      const res = await fetch(`https://user.api.pharminc.in/public/user/${userId}`, {
         headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
       });
       if (!res.ok) throw new Error('Could not load user');
@@ -184,25 +186,24 @@ export default function HomeFeed() {
   // Handle post creation
   const handlePostSubmit = (e) => {
     e.preventDefault();
-    const userObj = tokenStorage.getUser();
-    const userId = userObj?.userId || userObj?.id;
-    if (!userId || !postContent) return;
+    if (!postTitle || !postContent) return alert("Title and Content are required!");
 
     setPosting(true);
-    fetch(`https://content.api.pharminc.in/private/post`, { // UPDATED ENDPOINT
+    fetch(`https://content.api.pharminc.in/private/post`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${tokenStorage.getToken()}`
       },
       body: JSON.stringify({
+        title: postTitle,
         content: postContent,
-        userId: userId
+        attachmentId: postAttachmentId || undefined
       })
     })
       .then(res => res.ok ? res.json() : Promise.reject('Failed to create post'))
       .then(newPostId => {
-        fetch(`https://content.api.pharminc.in/public/post`, { // UPDATED ENDPOINT
+        fetch(`https://content.api.pharminc.in/public/post`, {
           headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
         })
           .then(res => res.ok ? res.json() : Promise.reject('Could not refresh posts'))
@@ -211,17 +212,19 @@ export default function HomeFeed() {
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
             setPosts(sortedPosts);
-            // Update likedCount for new posts
             const newLikedCount = {};
             sortedPosts.forEach(post => {
               newLikedCount[post.id] = parseInt(post.reactions) || 0;
             });
             setLikedCount(newLikedCount);
           });
+        setPostTitle("");
         setPostContent("");
+        setPostAttachmentId("");
       })
       .catch(err => {
         console.error(err);
+        alert("Failed to create post: " + err);
       })
       .finally(() => {
         setPosting(false);
@@ -237,9 +240,11 @@ export default function HomeFeed() {
     }));
   };
 
+  // Map posts for display
   const user = userData?.user || userData;
   const displayPosts = posts.length > 0 ? posts : mockPosts;
   const [mappedDisplayPosts, setMappedDisplayPosts] = useState([]);
+
   useEffect(() => {
     const mapAllPosts = async () => {
       const mapped = await Promise.all(
@@ -261,7 +266,7 @@ export default function HomeFeed() {
             comments: post.comments || 0,
             shares: post.shares || 0,
             saves: post.saves || 0,
-            image: post.imageId ? `https://content.api.pharminc.in/image/${post.imageId}` : post.image // UPDATED ENDPOINT
+            image: post.imageId ? `https://content.api.pharminc.in/image/${post.imageId}` : post.image
           };
         })
       );
@@ -323,14 +328,13 @@ export default function HomeFeed() {
                 <p className="text-sm text-gray-500">Loading profile...</p>
               ) : (
                 <>
-                  <h2 className="text-lg font-bold text-gray-900">Dr {user?.firstName} {user?.lastName}</h2>
-                  <div className="text-blue-700 text-sm font-medium mt-1">{user?.specialization}</div>
+                  <h2 className="text-lg font-bold text-gray-900">Dr {user?.name}</h2>
+                  <div className="text-blue-700 text-sm font-medium mt-1">{user?.role}</div>
                 </>
               )}
             </div>
           </div>
         </Link>
-
         {/* Navigation */}
         <nav className="mt-2 space-y-0">
           {[
@@ -375,7 +379,7 @@ export default function HomeFeed() {
           {/* Your Feed and Filter */}
           <div className="bg-white rounded-xl shadow border border-gray-100 w-full max-w-2xl mt-6 px-6 py-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font2-semibold">Your Feed</h2>
+              <h2 className="text-xl font-semibold">Your Feed</h2>
               <Button variant="ghost" size="sm">
                 <Filter className="h-4 w-4 mr-2" />
                 Filter
@@ -389,13 +393,30 @@ export default function HomeFeed() {
                   alt={user?.firstName || "User"}
                   className="w-10 h-10 rounded-full object-cover"
                 />
-                <Input
-                  type="text"
-                  placeholder="Share your medical insights, research, or case studies…"
-                  className="flex-1 bg-gray-50 border-gray-200 h-10 text-sm"
-                  value={postContent}
-                  onChange={(e) => setPostContent(e.target.value)}
-                />
+                <div className="flex-1 flex flex-col gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Post title (required)"
+                    value={postTitle}
+                    onChange={(e) => setPostTitle(e.target.value)}
+                    required
+                    className="bg-gray-50 border-gray-200 h-10 text-sm"
+                  />
+                  <Input
+                    type="text"
+                    placeholder="Attachment ID (optional)"
+                    value={postAttachmentId}
+                    onChange={(e) => setPostAttachmentId(e.target.value)}
+                    className="bg-gray-50 border-gray-200 h-10 text-sm"
+                  />
+                  <textarea
+                    placeholder="Share your medical insights, research, or case studies…"
+                    className="flex-1 bg-gray-50 border-gray-200 h-20 p-2 text-sm rounded"
+                    value={postContent}
+                    onChange={(e) => setPostContent(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
               <div className="flex gap-2 mt-3">
                 <Button variant="ghost" size="sm" className="text-blue-600 hover:bg-blue-50">
