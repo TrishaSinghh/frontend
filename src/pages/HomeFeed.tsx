@@ -132,15 +132,16 @@ export default function HomeFeed() {
 
   // Fetch posts from backend, sorted by createdAt (newest first)
   useEffect(() => {
-    fetch(`https://content.api.pharminc.in/public/post`, {
-      headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
-    })
-      .then(res => res.ok ? res.json() : Promise.reject('Could not load posts'))
-      .then(data => {
-        const sortedPosts = (data || []).sort((a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        setPosts(sortedPosts);
+  fetch(`https://content.api.pharminc.in/public/post`, {
+    headers: { Authorization: `Bearer ${tokenStorage.getToken()}` }
+  })
+    .then(res => res.ok ? res.json() : Promise.reject('Could not load posts'))
+    .then(response => {
+      // Use response.data, and sort by created_at
+      const sortedPosts = (response.data || []).sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setPosts(sortedPosts);
         // Initialize likedCount for each post
         const initialLikedCount = {};
         sortedPosts.forEach(post => {
@@ -209,7 +210,7 @@ export default function HomeFeed() {
           .then(res => res.ok ? res.json() : Promise.reject('Could not refresh posts'))
           .then(data => {
             const sortedPosts = (data || []).sort((a, b) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             );
             setPosts(sortedPosts);
             const newLikedCount = {};
